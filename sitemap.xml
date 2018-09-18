@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <url>
+    <loc>https://killmebaby.cc/posts/kubernetes-deployment-with-kubespray/</loc>
+    <lastmod>2018-08-05T09:58:09+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/posts/ceph-deployment/</loc>
+    <lastmod>2018-02-24T11:18:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/posts/redis-cluster-deployment/</loc>
+    <lastmod>2018-02-06T22:45:59+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/posts/nginx-uwsgi-django-deployment/</loc>
+    <lastmod>2017-09-17T22:37:59+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/about/</loc>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/archives/</loc>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/categories/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/tags/ceph/</loc>
+    <lastmod>2018-02-24T11:18:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/tags/deployment/</loc>
+    <lastmod>2018-08-05T09:58:09+08:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/tags/django/</loc>
+    <lastmod>2017-09-17T22:37:59+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/</loc>
+    <lastmod>2018-08-05T09:58:09+08:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/categories/kubernetes/</loc>
+    <lastmod>2018-08-05T09:58:09+08:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/tags/kubernetes/</loc>
+    <lastmod>2018-08-05T09:58:09+08:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/tags/kubespray/</loc>
+    <lastmod>2018-08-05T09:58:09+08:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/posts/</loc>
+    <lastmod>2018-08-05T09:58:09+08:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/tags/redis/</loc>
+    <lastmod>2018-02-06T22:45:59+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/series/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/categories/software-deployment/</loc>
+    <lastmod>2018-02-24T11:18:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/tags/</loc>
+    <lastmod>2018-02-24T11:18:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+</urlset>
