@@ -3,6 +3,11 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
+    <loc>https://killmebaby.cc/posts/golang-nonreetrant-function/</loc>
+    <lastmod>2018-10-11T10:28:02+08:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://killmebaby.cc/posts/kubernetes-deployment-with-kubespray/</loc>
     <lastmod>2018-08-05T09:58:09+08:00</lastmod>
   </url>
@@ -54,8 +59,20 @@
   </url>
   
   <url>
+    <loc>https://killmebaby.cc/tags/go/</loc>
+    <lastmod>2018-10-11T10:28:02+08:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://killmebaby.cc/categories/go/</loc>
+    <lastmod>2018-10-11T10:28:02+08:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>https://killmebaby.cc/</loc>
-    <lastmod>2018-08-05T09:58:09+08:00</lastmod>
+    <lastmod>2018-10-11T10:28:02+08:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -78,8 +95,14 @@
   </url>
   
   <url>
+    <loc>https://killmebaby.cc/tags/nonreetrant/</loc>
+    <lastmod>2018-10-11T10:28:02+08:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>https://killmebaby.cc/posts/</loc>
-    <lastmod>2018-08-05T09:58:09+08:00</lastmod>
+    <lastmod>2018-10-11T10:28:02+08:00</lastmod>
     <priority>0</priority>
   </url>
   
