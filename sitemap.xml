@@ -3,27 +3,27 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>https://killmebaby.cc/posts/golang-nonreetrant-function/</loc>
+    <loc>https://killmebaby.cc/posts/2018-10-11-golang-nonreetrant-function/</loc>
     <lastmod>2018-10-11T10:28:02+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://killmebaby.cc/posts/kubernetes-deployment-with-kubespray/</loc>
+    <loc>https://killmebaby.cc/posts/2018-08-05-kubernetes-deployment-with-kubespray/</loc>
     <lastmod>2018-08-05T09:58:09+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://killmebaby.cc/posts/ceph-deployment/</loc>
+    <loc>https://killmebaby.cc/posts/2018-02-24-ceph-deployment/</loc>
     <lastmod>2018-02-24T11:18:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://killmebaby.cc/posts/redis-cluster-deployment/</loc>
+    <loc>https://killmebaby.cc/posts/2018-02-06-redis-cluster-deployment/</loc>
     <lastmod>2018-02-06T22:45:59+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://killmebaby.cc/posts/nginx-uwsgi-django-deployment/</loc>
+    <loc>https://killmebaby.cc/posts/2017-09-17-nginx-uwsgi-django-deployment/</loc>
     <lastmod>2017-09-17T22:37:59+00:00</lastmod>
   </url>
   
@@ -59,13 +59,13 @@
   </url>
   
   <url>
-    <loc>https://killmebaby.cc/tags/go/</loc>
+    <loc>https://killmebaby.cc/categories/go/</loc>
     <lastmod>2018-10-11T10:28:02+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://killmebaby.cc/categories/go/</loc>
+    <loc>https://killmebaby.cc/tags/go/</loc>
     <lastmod>2018-10-11T10:28:02+08:00</lastmod>
     <priority>0</priority>
   </url>
@@ -77,13 +77,13 @@
   </url>
   
   <url>
-    <loc>https://killmebaby.cc/tags/kubernetes/</loc>
+    <loc>https://killmebaby.cc/categories/kubernetes/</loc>
     <lastmod>2018-08-05T09:58:09+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://killmebaby.cc/categories/kubernetes/</loc>
+    <loc>https://killmebaby.cc/tags/kubernetes/</loc>
     <lastmod>2018-08-05T09:58:09+08:00</lastmod>
     <priority>0</priority>
   </url>

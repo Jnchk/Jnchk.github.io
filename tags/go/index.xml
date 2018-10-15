@@ -13,11 +13,11 @@
     
     
     <item>
-      <title>Go语言不可重入函数</title>
-      <link>https://killmebaby.cc/posts/golang-nonreetrant-function/</link>
+      <title>Golang不可重入函数</title>
+      <link>https://killmebaby.cc/posts/2018-10-11-golang-nonreetrant-function/</link>
       <pubDate>Thu, 11 Oct 2018 10:28:02 +0800</pubDate>
       
-      <guid>https://killmebaby.cc/posts/golang-nonreetrant-function/</guid>
+      <guid>https://killmebaby.cc/posts/2018-10-11-golang-nonreetrant-function/</guid>
       <description>&lt;p&gt;在同一时间点只会被运行一次的函数，我们称其为不可重入函数。本文介绍Go语言不可重入函数的实现方式。
 &lt;/p&gt;</description>
     </item>

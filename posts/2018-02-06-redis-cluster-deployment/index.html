@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <title>How to deploy redis cluster - KillMeBaby</title>
+  <meta property="og:title" content="How to deploy redis cluster - KillMeBaby" />
+  <meta name="twitter:title" content="How to deploy redis cluster - KillMeBaby" />
+  <meta name="description" content="本文介绍如何通过源码部署redis cluster。
+">
+  <meta property="og:description" content="本文介绍如何通过源码部署redis cluster。
+">
+  <meta name="twitter:description" content="本文介绍如何通过源码部署redis cluster。
+">
+  <meta name="author" content="Sarshes"/>
+  <link rel='icon' type='image/x-icon' href="https://killmebaby.cc/img/favicon.ico" />
+  <meta property="og:site_name" content="KillMeBaby" />
+  <meta property="og:url" content="https://killmebaby.cc/posts/2018-02-06-redis-cluster-deployment/" />
+  <meta property="og:type" content="article" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="generator" content="Hugo 0.46" />
+  <link rel="stylesheet" href="/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="/css/style.css" media="all" />
+  <link rel="stylesheet" href="/css/syntax.css" media="all" />
+  <link rel="stylesheet" href="/css/custom.css" media="all" />
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script defer src="/js/all.js"></script>
+
+<link rel="stylesheet" href="/css/highlight.min.css" media="all" />
+<link rel="stylesheet" href="/css/prism.css" media="all" />
+<link rel="stylesheet" href="/css/pygment_highlights.css" />
+
+
+</head>
+
+<body>
+
+<header class="site-header">
+  <nav class="site-navi">
+    <h1 class="site-title"><a href="/">KillMeBaby</a></h1>
+    <ul class="site-navi-items">
+      <li class="site-navi-item-categories"><a href="/categories/" title="Categories">Categories</a></li>
+      <li class="site-navi-item-tags"><a href="/tags/" title="Tags">Tags</a></li>
+      <li class="site-navi-item-archives"><a href="/archives/" title="Archives">Archives</a></li>
+      <li class="site-navi-item-about"><a href="/about/" title="About">About</a></li>
+    </ul>
+  </nav>
+</header>
+<hr class="site-header-bottom">
+
+  <div class="main" role="main">
+    <article class="article">
+      
+      
+      <h1 class="article-title">How to deploy redis cluster</h1>
+      
+      <hr class="article-title-bottom">
+      <ul class="article-meta">
+        <li class="article-meta-date"><time>February 6, 2018</time></li>
+        <li class="article-meta-categories">
+          <a href="/categories/software-deployment/">
+            <i class="fas fa-folder"></i>
+            software-deployment
+          </a>&nbsp;
+        </li>
+        <li class="article-meta-tags">
+          <a href="/tags/redis/">
+            <i class="fas fa-tag"></i>
+            redis
+          </a>&nbsp;
+        </li>
+        <li class="article-meta-tags">
+          <a href="/tags/deployment/">
+            <i class="fas fa-tag"></i>
+            deployment
+          </a>&nbsp;
+        </li>
+      </ul>
+      
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li><a href="#redis-cluster的特点">Redis Cluster的特点</a></li>
+<li><a href="#搭建过程">搭建过程</a>
+<ul>
+<li><a href="#安装-redis">安装 Redis</a></li>
+<li><a href="#部署-redis-cluster">部署 Redis Cluster</a></li>
+</ul></li>
+</ul>
+</nav>
+</aside>
+      <p>本文介绍如何通过源码部署redis cluster。
+</p>
+
+<h1 id="redis-cluster的特点">Redis Cluster的特点</h1>
+
+<ul>
+<li>高性能，可线性扩展至1000的节点。没有代理，异步复制数据，不对数据做 merge 操作</li>
+<li>写操作的安全性在可接受范围内</li>
+<li>高可用</li>
+<li>Redis Cluster 的节点之间通过 Redis Cluster Bus 协议互相连接</li>
+<li>Redis Cluster 的节点不会通过 proxy 来转发请求，而是通过 -MOVED 或者 -ASK 错误来将客户端的请求转发到正确的 node</li>
+</ul>
+
+<h1 id="搭建过程">搭建过程</h1>
+
+<h2 id="安装-redis">安装 Redis</h2>
+
+<p>Redis Cluster 的搭建有多种方法，这里采用源代码的方式部署，因为 Redis 的源代码中提供了特定的工具来部署，用起来比较方便。</p>
+
+<p>首先到官方网站下载源代码并进行编译。</p>
+
+<pre><code class="language-bash">$ wget http://download.redis.io/releases/redis-4.0.2.tar.gz
+$ tar xvf redis-4.0.2.tar.gz
+$ cd redis-4.0.2
+
+# 先编译依赖库
+$ cd deps
+$ make hiredis lua jemalloc linenoise
+
+# 再编译 redis
+$ cd ../
+$ make
+</code></pre>
+
+<p>编译完成后，输出部分会提示我们运行<code>make test</code>。</p>
+
+<pre><code class="language-bash">Hint: It's a good idea to run 'make test' ;)
+
+make[1]: Leaving directory '/root/download/redis-4.0.2/src'
+
+$ make test
+</code></pre>
+
+<p>make test 可能会需要一些依赖，如<code>tcl</code>，<code>ruby</code>，<code>redis(ruby library)</code>。</p>
+
+<pre><code class="language-bash">$ yum install tcl
+</code></pre>
+
+<p>安装 ruby ，因为 redis 库要<code>ruby 2.2.2</code>版本之后才支持，而 Centos 的默认 ruby 版本是<code>2.0.0</code>所以我们可能需要通过其他方式安装 ruby 。</p>
+
+<pre><code class="language-bash"># 更新内容请到 rvm 官网查看
+$ gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+$ \curl -sSL https://get.rvm.io | bash -s stable
+$ rvm install 2.4.2
+
+# 更新 gems 源
+$ yum install rubygems
+$ gem sources -r https://rubygems.org/
+$ gem sources -a https://ruby.taobao.org
+</code></pre>
+
+<p>通过 ruby 安装 redis 库</p>
+
+<pre><code class="language-bash">$ gem install redis
+</code></pre>
+
+<p>然后运行<code>make test</code>看有无错误，并进行安装</p>
+
+<pre><code class="language-bash">$ make test
+$ make install
+</code></pre>
+
+<h2 id="部署-redis-cluster">部署 Redis Cluster</h2>
+
+<p>首先部署 Redis</p>
+
+<pre><code class="language-bash">$ cd utils
+$ ./install_server.sh 
+Welcome to the redis service installer
+This script will help you easily set up a running redis server
+
+Please select the redis port for this instance: [6379] 7788
+Please select the redis config file name [/etc/redis/7788.conf] 
+Selected default - /etc/redis/7788.conf
+Please select the redis log file name [/var/log/redis_7788.log] 
+Selected default - /var/log/redis_7788.log
+Please select the data directory for this instance [/var/lib/redis/7788] 
+Selected default - /var/lib/redis/7788
+Please select the redis executable path [/usr/local/bin/redis-server] 
+Selected config:
+Port           : 7788
+Config file    : /etc/redis/7788.conf
+Log file       : /var/log/redis_7788.log
+Data dir       : /var/lib/redis/7788
+Executable     : /usr/local/bin/redis-server
+Cli Executable : /usr/local/bin/redis-cli
+Is this ok? Then press ENTER to go on or Ctrl-C to abort.
+</code></pre>
+
+<p>在部署了多个 Redis Server 之后我们需要依次修改<code>/etc/redis/7788.conf</code>使其开启<code>cluster</code>功能。</p>
+
+<pre><code class="language-bash"># 打开 /etc/redis/7788.conf ，去掉 cluster-enabled yes 之前的注释符
+cluster-enabled yes
+</code></pre>
+
+<p>修改完毕后依次通过<code>/etc/init.d/redis_7788</code>等命令启动<code>Redis Server</code></p>
+
+<pre><code class="language-bash">for i in 88 99 00 ; do /etc/init.d/redis_77${i} start; done
+</code></pre>
+
+<p>完成之后可以通过<code>redis-cli</code>稍作测试，确定没有问题之后部署<code>Redis Cluster</code>集群</p>
+
+<pre><code class="language-bash">$ yum install redis-trib
+$ redis-trib create 127.0.0.1:7788 127.0.0.1:7799 127.0.0.1:7700
+</code></pre>
+
+<p>搭建完毕</p>
+    </article>
+    <section class="license">
+        <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>
+        <br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.
+    </section>
+
+    <ul class="pager article-pager">
+      <li class="pager-newer">
+          <a href="/posts/2018-02-24-ceph-deployment/" data-toggle="tooltip" data-placement="top" title="How to deploy ceph with ceph-deploy">&lt; Newer</a>
+      </li>
+      <li class="pager-older">
+        <a href="/posts/2017-09-17-nginx-uwsgi-django-deployment/" data-toggle="tooltip" data-placement="top" title="How to deploy django with wsgi">Older &gt;</a>
+      </li>
+    </ul>
+
+
+<div class="site-footer">
+  <div class="copyright">&copy; Copyright 2017 Sarshes</div>
+  <ul class="site-footer-items">
+  </ul>
+  <div class="powerdby">
+    Powered by <a href="https://gohugo.io/">Hugo</a> and <a href="https://github.com/taikii/whiteplain">Whiteplain</a>
+  </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="/js/popper.min.js"></script>
+<script src="/js/bootstrap.min.js"></script>
+<script src="/js/script.js"></script>
+<script src="/js/custom.js"></script>
+<script src="/js/prism.js"></script>
+<script src="/js/highlight.min.js"></script>
+
+
+</body>
+</html>
