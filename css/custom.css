@@ -10,25 +10,25 @@ body {
   line-height: 1.2;
 }
 h1 {
-  font-family: Microsoft YaHei; /*SimHei;*/
+  font-family: Consolas, Microsoft YaHei; /*SimHei;*/
   margin-top: 30px;
   margin-bottom: 20px;
   font-weight: bold;
 }
 h2,h3,h4,h5,h6 {
-  font-family: Microsoft YaHei; /*SimHei;*/
+  font-family: Consolas, Microsoft YaHei; /*SimHei;*/
   margin-top: 20px;
   margin-bottom: 10px;
   font-weight: bold;
 }
 h3,h4,h5,h6 {
-  font-family: Microsoft YaHei; /*SimHei;*/
+  font-family: Consolas, Microsoft YaHei; /*SimHei;*/
   margin-top: 10px;
   margin-bottom: 10px;
   font-weight: bold;
 }
 h4,h5,h6 {
-  font-family: Microsoft YaHei; /*SimHei;*/
+  font-family: Consolas, Microsoft YaHei; /*SimHei;*/
   margin-top: 10px;
   margin-bottom: 10px;
 }
