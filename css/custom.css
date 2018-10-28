@@ -39,14 +39,11 @@ pre, code {
   /*background-color: inherit .language-markup;*/
   font-family: Consolas, Microsoft YaHei; /*SimHei;*/
   font-size: 1.00em;
-  white-space: pre-wrap;
-  word-wrap: break-word;
   padding-left: 4px;
   padding-right: 4px;
 }
 .highlight pre, .highlight code {
   font-size: 0.95em;
-  /*background-color: inherit;*/
   padding: 0;
   margin-top: 6px;
   margin-bottom: 6px;
@@ -55,7 +52,7 @@ p {
   font-family: Consolas; /* default font */
   font-size: 1.00em;
   color: #444444;
-  line-height: 1.3;
+  line-height: 1.2;
   /*line-height: 4px;*/
   letter-spacing: 0.3px;
 }
