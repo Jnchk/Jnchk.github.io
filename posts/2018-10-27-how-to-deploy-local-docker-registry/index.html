@@ -191,6 +191,13 @@ The configuration files are ready, please use docker-compose to start the servic
 
 </code></pre>
 
+<p>设置Harbor开机自启动。</p>
+
+<pre><code class="language-bash">
+echo &quot;/usr/bin/docker-compose -f /opt/harbor/docker-compose.yml up -d&quot; &gt;&gt; /etc/rc.d/rc.local
+
+</code></pre>
+
 <h1 id="客户端设置">客户端设置</h1>
 
 <p>若希望通过docker连接我们刚刚部署的Harbor，我们需要将证书文件导入到可信列表中，下面将分别针对Centos与Ubuntu环境进行说明。</p>
