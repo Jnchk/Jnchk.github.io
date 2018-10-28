@@ -34,7 +34,7 @@ h4,h5,h6 {
 
 h1,h1{font-size:1.75rem}.h2,h2{font-size:1.25rem}.h3,h3{font-size:1rem}.h4,h4{font-size:1rem}.h5,h5{font-size:1rem}.h6,h6{font-size:1rem}
 
-pre, code {
+pre, code, a {
   background-color: inherit;
   /*background-color: inherit .language-markup;*/
   font-family: Consolas, Microsoft YaHei; /*SimHei;*/
