@@ -7,10 +7,20 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-CN</language>
     <copyright>&amp;copy; Copyright 2017 Sarshes</copyright>
-    <lastBuildDate>Sun, 05 Aug 2018 09:58:09 +0800</lastBuildDate>
+    <lastBuildDate>Mon, 03 Sep 2018 01:21:46 +0800</lastBuildDate>
     
 	<atom:link href="https://killmebaby.cc/tags/deployment/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>SS&#43;privoxy实现pac代理</title>
+      <link>https://killmebaby.cc/posts/2018-09-03-ss&#43;privoxy%E5%AE%9E%E7%8E%B0pac%E4%BB%A3%E7%90%86/</link>
+      <pubDate>Mon, 03 Sep 2018 01:21:46 +0800</pubDate>
+      
+      <guid>https://killmebaby.cc/posts/2018-09-03-ss&#43;privoxy%E5%AE%9E%E7%8E%B0pac%E4%BB%A3%E7%90%86/</guid>
+      <description>&lt;p&gt;本文介绍如何通过&lt;code&gt;ss&lt;/code&gt;与&lt;code&gt;privoxy&lt;/code&gt;在&lt;code&gt;Linux&lt;/code&gt;客户机上实现带有pac功能的代理。
+&lt;/p&gt;</description>
+    </item>
     
     <item>
       <title>How to deploy Kubernetes with Kubespray</title>

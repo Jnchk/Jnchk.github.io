@@ -7,10 +7,20 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-CN</language>
     <copyright>&amp;copy; Copyright 2017 Sarshes</copyright>
-    <lastBuildDate>Sun, 05 Aug 2018 09:58:09 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 27 Oct 2018 21:06:59 +0800</lastBuildDate>
     
 	<atom:link href="https://killmebaby.cc/categories/kubernetes/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>2018 10 27 How to Deploy Local Docker Registry</title>
+      <link>https://killmebaby.cc/posts/2018-10-27-how-to-deploy-local-docker-registry/</link>
+      <pubDate>Sat, 27 Oct 2018 21:06:59 +0800</pubDate>
+      
+      <guid>https://killmebaby.cc/posts/2018-10-27-how-to-deploy-local-docker-registry/</guid>
+      <description>&lt;p&gt;搭建私有容器云平台离不开镜像仓库，本文介绍如何通过Harbor搭建私有镜像仓库。
+&lt;/p&gt;</description>
+    </item>
     
     <item>
       <title>How to deploy Kubernetes with Kubespray</title>
