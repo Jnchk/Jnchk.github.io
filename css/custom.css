@@ -38,14 +38,14 @@ pre, code {
   background-color: inherit;
   /*background-color: inherit .language-markup;*/
   font-family: Consolas, Microsoft YaHei; /*SimHei;*/
-  font-size: 0.93em;
+  font-size: 1.00em;
   white-space: pre-wrap;
   word-wrap: break-word;
   padding-left: 4px;
   padding-right: 4px;
 }
 .highlight pre, .highlight code {
-  font-size: 1.00em;
+  font-size: 0.95em;
   /*background-color: inherit;*/
   padding: 0;
   margin-top: 6px;

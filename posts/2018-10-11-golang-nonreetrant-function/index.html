@@ -97,8 +97,7 @@
 
 <p>某个服务需要在多个goroutine中完成同一个任务，而这个任务中某一个步骤涉及goroutine之间共享的资源，如果我们不对这个过程做特殊处理，则可能会出现一些问题，比如下面的代码。</p>
 
-<pre><code class="language-go">
-package main
+<pre><code class="language-go">package main
   
 import (
     &quot;fmt&quot;
@@ -120,28 +119,24 @@ func main() {
     }
     wg.Wait()
 }
-
 </code></pre>
 
 <p>我们启动了三个goroutine，执行后会发现三个goroutine同时执行，共同等待2s之后一同退出。</p>
 
-<pre><code class="language-bash">
-go run main.go 
+<pre><code class="language-bash">go run main.go 
 Goroutine 2 do something...
 Goroutine 0 do something...
 Goroutine 1 do something...
 Goroutine 0 end...
 Goroutine 2 end...
 Goroutine 1 end...
-
 </code></pre>
 
 <h1 id="阻塞不可重用">阻塞不可重用</h1>
 
 <p>一般来说，我们可以使用锁来在解决不同goroutine之间抢占资源的问题。Go语言中的<code>sync.Mutex</code>即可以用来实现锁，使用方式如下：</p>
 
-<pre><code class="language-go">
-package main                                                                                 
+<pre><code class="language-go">package main                                                                                 
                                                                                              
 import (                                                                                     
     &quot;fmt&quot;                                                                                    
@@ -166,20 +161,17 @@ func main() {
     }
     wg.Wait()
 }
-
 </code></pre>
 
 <p>执行过程与前面的例子大不相同，没有拿到锁的goroutine会阻塞，直到获取到锁后则继续运行。所以我们看到的是三个goroutine依次完成自己的运行过程。</p>
 
-<pre><code class="language-bash">
-go run main.go 
+<pre><code class="language-bash">go run main.go 
 Goroutine 2 do something...
 Goroutine 2 end...
 Goroutine 0 do something...
 Goroutine 0 end...
 Goroutine 1 do something...
 Goroutine 1 end...
-
 </code></pre>
 
 <p>这种方式在很多场景是可以满足需求的，但有时我们不希望goroutine阻塞等待，而是直接返回，继续做其他工作，那么这种方式就不适用了。</p>
@@ -188,8 +180,7 @@ Goroutine 1 end...
 
 <p>我们知道使用mutex的话是会使goroutine阻塞的，那么有没有什么办法能让获取mutex的过程不阻塞呢？有些朋友想到了下面的方式来实现：</p>
 
-<pre><code class="language-go">
-package locker
+<pre><code class="language-go">package locker
   
 import &quot;sync&quot;
 
@@ -216,15 +207,13 @@ func (doubleLocker *Locker) Unlock() {
     doubleLocker.locked = false
     doubleLocker.l2.Unlock()
 }
-
 </code></pre>
 
 <p>我们定义了一个<code>Locker</code>结构，其中的<code>l2</code>是为读写数据而加的锁。<code>success</code>用来做状态判断，如果其值为false，那么获取<code>l2</code>锁，并对数据进行处理；否则直接返回。这个过程肯定不是原子的，放在任何并发环境里都会出现问题。所以我们需要另一个锁<code>l1</code>来对这个判断过程加锁，使其成为“原子”操作。而每个goroutine获取<code>l1</code>的持续时间都很短，造成的阻塞可以忽略不记，从而达到非阻塞的效果。</p>
 
 <p>调用方式如下：</p>
 
-<pre><code class="language-go">
-package main
+<pre><code class="language-go">package main
   
 import (
     &quot;fmt&quot;
@@ -254,24 +243,20 @@ func main() {
     }
     wg.Wait()
 }
-
 </code></pre>
 
 <p>执行效果如下（只运行了一个goroutine）：</p>
 
-<pre><code class="language-bash">
-go run main.go 
+<pre><code class="language-bash">go run main.go 
 Goroutine 2 do something...
 Goroutine 2 end...
-
 </code></pre>
 
 <h1 id="非阻塞不可重入1">非阻塞不可重入1</h1>
 
 <p>事实上，go语言已经帮助我们完成了上面做的事情，功能包含在了<code>sync/atomic</code>包中。代码如下：</p>
 
-<pre><code class="language-go">
-package main
+<pre><code class="language-go">package main
   
 import (
     &quot;fmt&quot;
@@ -301,18 +286,15 @@ func main() {
     }
     wg.Wait()
 }
-
 </code></pre>
 
 <p>上面的代码中我们使用了<code>atomic.CompareAndSwapInt64</code>这个函数。调用时，函数会首先判断<code>reentrance</code>是否为0，如果是0则将其赋值为1，并返回true。否则（即<code>reentrance</code>为1）直接返回false。这所有操作整体是原子的。</p>
 
 <p>执行结果与我们自己实现的版本是一样的。</p>
 
-<pre><code class="language-bash">
-go run main.go 
+<pre><code class="language-bash">go run main.go 
 Goroutine 2 do something...
 Goroutine 2 end...
-
 </code></pre>
 
 <h1 id="两个非阻塞版本有何区别">两个非阻塞版本有何区别</h1>

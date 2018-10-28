@@ -96,8 +96,7 @@
 
 <p>使用系统自带的包管理工具安装<code>shadowsocks</code>之后，修改配置文件：</p>
 
-<pre><code class="language-bash">
-cat /etc/shadowsocks/example.json
+<pre><code class="language-bash">cat /etc/shadowsocks/example.json
 {   
     &quot;server&quot;:&quot;0.0.0.0&quot;,   
     &quot;port_password&quot;:
@@ -111,13 +110,11 @@ cat /etc/shadowsocks/example.json
 	&quot;workers&quot;: 1,
     &quot;prefer_ipv6&quot;: false
 }
-
 </code></pre>
 
 <p>配置<code>systemd</code>启动</p>
 
-<pre><code class="language-bash">
-cat /usr/lib/systemd/system/ssserver.service 
+<pre><code class="language-bash">cat /usr/lib/systemd/system/ssserver.service 
 [Unit]
 Description=ssserver
 After=network.target
@@ -130,7 +127,6 @@ PrivateDevices=yes
 
 [Install]
 WantedBy=multi-user.target
-
 </code></pre>
 
 <p>然后可以通过<code>systemctl</code>控制server状态。</p>
@@ -139,8 +135,7 @@ WantedBy=multi-user.target
 
 <p>通过同样的方式安装<code>shadowsocks</code>，但这里我们要使用<code>sslocal</code>，配置如下:</p>
 
-<pre><code class="language-bash">
-cat /etc/shadowsocks/config.json 
+<pre><code class="language-bash">cat /etc/shadowsocks/config.json 
 {
     &quot;server&quot;:&quot;server_ip&quot;,  # 刚刚ssserver的主机ip
     &quot;server_port&quot;:443,
@@ -153,13 +148,11 @@ cat /etc/shadowsocks/config.json
     &quot;workers&quot;: 1,
     &quot;prefer_ipv6&quot;: false
 }
-
 </code></pre>
 
 <p>然后以同样的方式配置<code>systemd</code>启动</p>
 
-<pre><code class="language-bash">
-cat /usr/lib/systemd/system/sslocal.service 
+<pre><code class="language-bash">cat /usr/lib/systemd/system/sslocal.service 
 [Unit]
 Description=sslocal
 After=network.target
@@ -172,7 +165,6 @@ PrivateDevices=yes
 
 [Install]
 WantedBy=multi-user.target
-
 </code></pre>
 
 <h1 id="privoxy配置">privoxy配置</h1>
@@ -181,8 +173,7 @@ WantedBy=multi-user.target
 
 <p>然后设置pac规则，满足对应条件时，流量将被转到sslocal开放的端口，否则将直连。</p>
 
-<pre><code class="language-bash">
-cat &lt;&lt;EOF &gt;/etc/privoxy/gfwlist.action 
+<pre><code class="language-bash">cat &lt;&lt;EOF &gt;/etc/privoxy/gfwlist.action 
 {{alias}}
 direct = +forward-override{forward .}
 shadowsocks = +forward-override{forward-socks5 127.0.0.1:1080 .}
@@ -198,46 +189,37 @@ shadowsocks = +forward-override{forward-socks5 127.0.0.1:1080 .}
 .google.com
 .googlesource.com
 .golang.org
-
 </code></pre>
 
 <p>将<code>gfw</code>设置填入到<code>config</code>中</p>
 
-<pre><code class="language-bash">
-echo actionsfile gfwlist.action &gt;&gt; /etc/privoxy/config
-
+<pre><code class="language-bash">echo actionsfile gfwlist.action &gt;&gt; /etc/privoxy/config
 </code></pre>
 
 <h1 id="如何使用">如何使用</h1>
 
 <p>先看一看目前的端口监听情况</p>
 
-<pre><code class="language-bash">
-ss -anlpt |grep 127.0.0.1
+<pre><code class="language-bash">ss -anlpt |grep 127.0.0.1
 LISTEN   0         128               127.0.0.1:8118             0.0.0.0:*       # privoxy监听端口
 LISTEN   0         128               127.0.0.1:1080             0.0.0.0:*       # sslocal监听端口
-
 </code></pre>
 
 <p>我们主要使用的是<code>8118</code>，有些一定需要代理才能使用的应用可以直接使用<code>1080</code>端口，但要使用<code>socks5</code>协议。</p>
 
 <p>全局代理使用环境变量设置</p>
 
-<pre><code class="language-bash">
-echo &quot;export http_proxy=http://127.0.0.1:8118
+<pre><code class="language-bash">echo &quot;export http_proxy=http://127.0.0.1:8118
 &gt; export https_proxy=http://127.0.0.1:8118
 &gt; export no_proxy=\&quot;localhost, 127.0.0.1, ::1\&quot;&quot; &gt;&gt; ~/.bashrc
 
 source ~/.bashrc
-
 </code></pre>
 
 <p>git设置</p>
 
-<pre><code class="language-bash">
-git config --global http.proxy http://127.0.0.1:8118
+<pre><code class="language-bash">git config --global http.proxy http://127.0.0.1:8118
 git config --global https.proxy http://127.0.0.1:8118
-
 </code></pre>
 
 <h1 id="关于pac设置">关于pac设置</h1>

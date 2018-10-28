@@ -97,8 +97,7 @@
 
 <p>这里以centos系统为例安装docker（按照docker官方提示进行即可，后续配置过程中会描述与ubuntu的差异）。</p>
 
-<pre><code class="language-bash">
-# install docker
+<pre><code class="language-bash"># install docker
 yum install -y yum-utils device-mapper-persistent-data lvm2
 yum-config-manager --add-repo \
     https://download.docker.com/linux/centos/docker-ce.repo
@@ -109,24 +108,20 @@ systemctl start docker
 # install docker-compose
 yum install -y epel-release
 yum install -y docker-compose
-
 </code></pre>
 
 <h1 id="部署harbor">部署Harbor</h1>
 
 <p>下载并解压Harbor的离线压缩包。</p>
 
-<pre><code class="language-bash">
-cd /opt
+<pre><code class="language-bash">cd /opt
 wget https://storage.googleapis.com/harbor-releases/harbor-offline-installer-v1.6.1.tgz
 tar xf harbor-offline-installer-v1.6.1.tgz &amp;&amp; cd harbor
-
 </code></pre>
 
 <p>为了安全性，与后续部署的便捷性，我们需要准备一对证书与密钥文件。注意“Common Name“的内容，一定要是<code>domain name</code>，而不能填写<code>ip</code>，而且最好填写三段式的域名。</p>
 
-<pre><code class="language-bash">
-mkdir certs &amp;&amp; cd certs
+<pre><code class="language-bash">mkdir certs &amp;&amp; cd certs
 
 openssl req -newkey rsa:4096 -nodes -keyout domain.key -x509 -days 3650 -out domain.crt
 Generating a 4096 bit RSA private key
@@ -148,13 +143,11 @@ Organization Name (eg, company) [Internet Widgits Pty Ltd]:
 Organizational Unit Name (eg, section) []:
 Common Name (e.g. server FQDN or YOUR name) []:reg.localregistry.com
 Email Address []:
-
 </code></pre>
 
 <p>接下来，我们需要对Harbor的设置稍作修改。需要注意<code>hostname</code>要保持与生成密钥时的<code>Common Name</code>一致。</p>
 
-<pre><code class="language-bash">
-pwd
+<pre><code class="language-bash">pwd
 /opt/harbor
 ls certs/
 domain.crt  domain.key
@@ -166,13 +159,11 @@ hostname = reg.localregistry.com
 grep ssl_cert harbor.cfg
 ssl_cert = /opt/harbor/certs/domain.crt
 ssl_cert_key = /opt/harbor/certs/domain.key
-
 </code></pre>
 
 <p>然后便可以部署Harbor。</p>
 
-<pre><code class="language-bash">
-./prepare 
+<pre><code class="language-bash">./prepare 
 Generated and saved secret to file: /data/secretkey
 Generated configuration file: ./common/config/nginx/nginx.conf
 Generated configuration file: ./common/config/adminserver/env
@@ -188,14 +179,11 @@ Generated certificate, key file: ./common/config/ui/private_key.pem, cert file: 
 The configuration files are ready, please use docker-compose to start the service.
 
 ./install.sh
-
 </code></pre>
 
 <p>设置Harbor开机自启动。</p>
 
-<pre><code class="language-bash">
-echo &quot;/usr/bin/docker-compose -f /opt/harbor/docker-compose.yml up -d&quot; &gt;&gt; /etc/rc.d/rc.local
-
+<pre><code class="language-bash">echo &quot;/usr/bin/docker-compose -f /opt/harbor/docker-compose.yml up -d&quot; &gt;&gt; /etc/rc.d/rc.local
 </code></pre>
 
 <h1 id="客户端设置">客户端设置</h1>
@@ -208,8 +196,7 @@ echo &quot;/usr/bin/docker-compose -f /opt/harbor/docker-compose.yml up -d&quot;
 <li>Centos</li>
 </ul>
 
-<pre><code class="language-bash">
-mkdir -p /etc/docker/certs.d/localregistry.com
+<pre><code class="language-bash">mkdir -p /etc/docker/certs.d/localregistry.com
 cp certs/domain.crt /etc/docker/certs.d/localregistry.com/
 cp certs/domain.crt /etc/pki/ca-trust/source/anchors/localregistry.com.crt
 update-ca-trust
@@ -227,15 +214,13 @@ Configure a credential helper to remove this warning. See
 https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
 Login Succeeded
-
 </code></pre>
 
 <ul>
 <li>Ubuntu</li>
 </ul>
 
-<pre><code class="language-bash">
-mkdir -p /etc/docker/certs.d/localregistry.com
+<pre><code class="language-bash">mkdir -p /etc/docker/certs.d/localregistry.com
 cp certs/domain.crt /etc/docker/certs.d/localregistry.com/
 cp certs/domain.crt /etc/ssl/certs/localregistry.com.crt
 update-ca-certificates
@@ -249,7 +234,6 @@ docker login reg.localregistry.com
 Username: admin
 Password:
 Login Succeeded 
-
 </code></pre>
 
 <h2 id="若只需要下载镜像-则只需导入证书并添加hosts文件内容即可">若只需要下载镜像，则只需导入证书并添加hosts文件内容即可</h2>
