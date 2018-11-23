@@ -6,7 +6,7 @@
     <description>Recent content in Django on KillMeBaby</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-CN</language>
-    <copyright>&amp;copy; Copyright 2017 Sarshes</copyright>
+    <copyright>&amp;copy; Copyright 2018 Sarshes</copyright>
     <lastBuildDate>Sun, 17 Sep 2017 22:37:59 +0000</lastBuildDate>
     
 	<atom:link href="https://killmebaby.cc/tags/django/index.xml" rel="self" type="application/rss+xml" />
@@ -18,8 +18,7 @@
       <pubDate>Sun, 17 Sep 2017 22:37:59 +0000</pubDate>
       
       <guid>https://killmebaby.cc/posts/2017-09-17-nginx-uwsgi-django-deployment/</guid>
-      <description>&lt;p&gt;本文介绍如何部署nginx+uWSGI+Django的生产环境。
-&lt;/p&gt;</description>
+      <description>&lt;p&gt;本文介绍如何部署nginx+uWSGI+Django的生产环境。&lt;/p&gt;</description>
     </item>
     
   </channel>

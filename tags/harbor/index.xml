@@ -6,7 +6,7 @@
     <description>Recent content in Harbor on KillMeBaby</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-CN</language>
-    <copyright>&amp;copy; Copyright 2017 Sarshes</copyright>
+    <copyright>&amp;copy; Copyright 2018 Sarshes</copyright>
     <lastBuildDate>Sat, 27 Oct 2018 21:06:59 +0800</lastBuildDate>
     
 	<atom:link href="https://killmebaby.cc/tags/harbor/index.xml" rel="self" type="application/rss+xml" />
@@ -18,8 +18,7 @@
       <pubDate>Sat, 27 Oct 2018 21:06:59 +0800</pubDate>
       
       <guid>https://killmebaby.cc/posts/2018-10-27-how-to-deploy-local-docker-registry/</guid>
-      <description>&lt;p&gt;搭建私有容器云平台离不开镜像仓库，本文介绍如何通过Harbor搭建私有镜像仓库。
-&lt;/p&gt;</description>
+      <description>&lt;p&gt;搭建私有容器云平台离不开镜像仓库，本文介绍如何通过Harbor搭建私有镜像仓库。&lt;/p&gt;</description>
     </item>
     
   </channel>

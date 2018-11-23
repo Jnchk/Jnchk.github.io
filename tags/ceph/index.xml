@@ -6,7 +6,7 @@
     <description>Recent content in Ceph on KillMeBaby</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-CN</language>
-    <copyright>&amp;copy; Copyright 2017 Sarshes</copyright>
+    <copyright>&amp;copy; Copyright 2018 Sarshes</copyright>
     <lastBuildDate>Sat, 24 Feb 2018 11:18:00 +0000</lastBuildDate>
     
 	<atom:link href="https://killmebaby.cc/tags/ceph/index.xml" rel="self" type="application/rss+xml" />
@@ -18,8 +18,7 @@
       <pubDate>Sat, 24 Feb 2018 11:18:00 +0000</pubDate>
       
       <guid>https://killmebaby.cc/posts/2018-02-24-ceph-deployment/</guid>
-      <description>&lt;p&gt;本文介绍如何通过ceph-deploy部署ceph集群。
-&lt;/p&gt;</description>
+      <description>&lt;p&gt;本文介绍如何通过ceph-deploy部署ceph集群。&lt;/p&gt;</description>
     </item>
     
   </channel>

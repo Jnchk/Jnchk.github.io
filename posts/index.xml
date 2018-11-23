@@ -6,7 +6,7 @@
     <description>Recent content in Posts on KillMeBaby</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-CN</language>
-    <copyright>&amp;copy; Copyright 2017 Sarshes</copyright>
+    <copyright>&amp;copy; Copyright 2018 Sarshes</copyright>
     <lastBuildDate>Sat, 27 Oct 2018 21:06:59 +0800</lastBuildDate>
     
 	<atom:link href="https://killmebaby.cc/posts/index.xml" rel="self" type="application/rss+xml" />
@@ -18,8 +18,7 @@
       <pubDate>Sat, 27 Oct 2018 21:06:59 +0800</pubDate>
       
       <guid>https://killmebaby.cc/posts/2018-10-27-how-to-deploy-local-docker-registry/</guid>
-      <description>&lt;p&gt;搭建私有容器云平台离不开镜像仓库，本文介绍如何通过Harbor搭建私有镜像仓库。
-&lt;/p&gt;</description>
+      <description>&lt;p&gt;搭建私有容器云平台离不开镜像仓库，本文介绍如何通过Harbor搭建私有镜像仓库。&lt;/p&gt;</description>
     </item>
     
     <item>
@@ -28,8 +27,7 @@
       <pubDate>Thu, 11 Oct 2018 10:28:02 +0800</pubDate>
       
       <guid>https://killmebaby.cc/posts/2018-10-11-golang-nonreetrant-function/</guid>
-      <description>&lt;p&gt;在同一时间点只会被运行一次的函数，我们称其为不可重入函数。本文介绍Go语言不可重入函数的实现方式。
-&lt;/p&gt;</description>
+      <description>&lt;p&gt;在同一时间点只会被运行一次的函数，我们称其为不可重入函数。本文介绍Go语言不可重入函数的实现方式。&lt;/p&gt;</description>
     </item>
     
     <item>
@@ -38,8 +36,7 @@
       <pubDate>Mon, 03 Sep 2018 01:21:46 +0800</pubDate>
       
       <guid>https://killmebaby.cc/posts/2018-09-03-ss&#43;privoxy%E5%AE%9E%E7%8E%B0pac%E4%BB%A3%E7%90%86/</guid>
-      <description>&lt;p&gt;本文介绍如何通过&lt;code&gt;ss&lt;/code&gt;与&lt;code&gt;privoxy&lt;/code&gt;在&lt;code&gt;Linux&lt;/code&gt;客户机上实现带有pac功能的代理。
-&lt;/p&gt;</description>
+      <description>&lt;p&gt;本文介绍如何通过&lt;code&gt;ss&lt;/code&gt;与&lt;code&gt;privoxy&lt;/code&gt;在&lt;code&gt;Linux&lt;/code&gt;客户机上实现带有pac功能的代理。&lt;/p&gt;</description>
     </item>
     
     <item>
@@ -48,8 +45,7 @@
       <pubDate>Sun, 05 Aug 2018 09:58:09 +0800</pubDate>
       
       <guid>https://killmebaby.cc/posts/2018-08-05-kubernetes-deployment-with-kubespray/</guid>
-      <description>&lt;p&gt;本文介绍如何通过kuberpray部署kubernetes集群。
-&lt;/p&gt;</description>
+      <description>&lt;p&gt;本文介绍如何通过kuberpray部署kubernetes集群。&lt;/p&gt;</description>
     </item>
     
     <item>
@@ -58,8 +54,7 @@
       <pubDate>Sat, 24 Feb 2018 11:18:00 +0000</pubDate>
       
       <guid>https://killmebaby.cc/posts/2018-02-24-ceph-deployment/</guid>
-      <description>&lt;p&gt;本文介绍如何通过ceph-deploy部署ceph集群。
-&lt;/p&gt;</description>
+      <description>&lt;p&gt;本文介绍如何通过ceph-deploy部署ceph集群。&lt;/p&gt;</description>
     </item>
     
     <item>
@@ -68,8 +63,7 @@
       <pubDate>Tue, 06 Feb 2018 22:45:59 +0000</pubDate>
       
       <guid>https://killmebaby.cc/posts/2018-02-06-redis-cluster-deployment/</guid>
-      <description>&lt;p&gt;本文介绍如何通过源码部署redis cluster。
-&lt;/p&gt;</description>
+      <description>&lt;p&gt;本文介绍如何通过源码部署redis cluster。&lt;/p&gt;</description>
     </item>
     
     <item>
@@ -78,8 +72,7 @@
       <pubDate>Sun, 17 Sep 2017 22:37:59 +0000</pubDate>
       
       <guid>https://killmebaby.cc/posts/2017-09-17-nginx-uwsgi-django-deployment/</guid>
-      <description>&lt;p&gt;本文介绍如何部署nginx+uWSGI+Django的生产环境。
-&lt;/p&gt;</description>
+      <description>&lt;p&gt;本文介绍如何部署nginx+uWSGI+Django的生产环境。&lt;/p&gt;</description>
     </item>
     
   </channel>

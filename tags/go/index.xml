@@ -6,7 +6,7 @@
     <description>Recent content in Go on KillMeBaby</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-CN</language>
-    <copyright>&amp;copy; Copyright 2017 Sarshes</copyright>
+    <copyright>&amp;copy; Copyright 2018 Sarshes</copyright>
     <lastBuildDate>Thu, 11 Oct 2018 10:28:02 +0800</lastBuildDate>
     
 	<atom:link href="https://killmebaby.cc/tags/go/index.xml" rel="self" type="application/rss+xml" />
@@ -18,8 +18,7 @@
       <pubDate>Thu, 11 Oct 2018 10:28:02 +0800</pubDate>
       
       <guid>https://killmebaby.cc/posts/2018-10-11-golang-nonreetrant-function/</guid>
-      <description>&lt;p&gt;在同一时间点只会被运行一次的函数，我们称其为不可重入函数。本文介绍Go语言不可重入函数的实现方式。
-&lt;/p&gt;</description>
+      <description>&lt;p&gt;在同一时间点只会被运行一次的函数，我们称其为不可重入函数。本文介绍Go语言不可重入函数的实现方式。&lt;/p&gt;</description>
     </item>
     
   </channel>
