@@ -7,10 +7,19 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-CN</language>
     <copyright>&amp;copy; Copyright 2018 Sarshes</copyright>
-    <lastBuildDate>Sat, 27 Oct 2018 21:06:59 +0800</lastBuildDate>
+    <lastBuildDate>Wed, 05 Dec 2018 10:39:28 +0800</lastBuildDate>
     
 	<atom:link href="https://killmebaby.cc/posts/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Flask Simple Manual</title>
+      <link>https://killmebaby.cc/posts/2018-12-5-flask-manual/</link>
+      <pubDate>Wed, 05 Dec 2018 10:39:28 +0800</pubDate>
+      
+      <guid>https://killmebaby.cc/posts/2018-12-5-flask-manual/</guid>
+      <description>&lt;p&gt;&lt;code&gt;Flask&lt;/code&gt; is a microframework for Python based on Werkzeug, Jinja 2 and good intentions.&lt;/p&gt;</description>
+    </item>
     
     <item>
       <title>How to Deploy Local Docker Registry</title>
