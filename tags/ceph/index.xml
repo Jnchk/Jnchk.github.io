@@ -1,25 +1,20 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Ceph on KillMeBaby</title>
+    <title>ceph on KillMeBaby</title>
     <link>https://killmebaby.cc/tags/ceph/</link>
-    <description>Recent content in Ceph on KillMeBaby</description>
+    <description>Recent content in ceph on KillMeBaby</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-CN</language>
-    <copyright>&amp;copy; Copyright 2018 Sarshes</copyright>
+    <copyright>&amp;copy; Copyright 2018-2023 Jnchk</copyright>
     <lastBuildDate>Sat, 24 Feb 2018 11:18:00 +0000</lastBuildDate>
-    
-	<atom:link href="https://killmebaby.cc/tags/ceph/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <atom:link href="https://killmebaby.cc/tags/ceph/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>How to deploy ceph with ceph-deploy</title>
       <link>https://killmebaby.cc/posts/2018-02-24-ceph-deployment/</link>
       <pubDate>Sat, 24 Feb 2018 11:18:00 +0000</pubDate>
-      
       <guid>https://killmebaby.cc/posts/2018-02-24-ceph-deployment/</guid>
       <description>&lt;p&gt;本文介绍如何通过ceph-deploy部署ceph集群。&lt;/p&gt;</description>
     </item>
-    
   </channel>
 </rss>

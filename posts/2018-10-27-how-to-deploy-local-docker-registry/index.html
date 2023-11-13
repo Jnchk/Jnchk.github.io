@@ -9,18 +9,22 @@
   <meta name="description" content="搭建私有容器云平台离不开镜像仓库，本文介绍如何通过Harbor搭建私有镜像仓库。">
   <meta property="og:description" content="搭建私有容器云平台离不开镜像仓库，本文介绍如何通过Harbor搭建私有镜像仓库。">
   <meta name="twitter:description" content="搭建私有容器云平台离不开镜像仓库，本文介绍如何通过Harbor搭建私有镜像仓库。">
-  <meta name="author" content="Sarshes"/>
+  <meta name="author" content="Jnchk"/>
   <link rel='icon' type='image/x-icon' href="https://killmebaby.cc/img/favicon.ico" />
   <meta property="og:site_name" content="KillMeBaby" />
   <meta property="og:url" content="https://killmebaby.cc/posts/2018-10-27-how-to-deploy-local-docker-registry/" />
   <meta property="og:type" content="article" />
   <meta name="twitter:card" content="summary" />
-  <meta name="generator" content="Hugo 0.52" />
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+  <meta name="generator" content="Hugo 0.120.4">
   <link rel="stylesheet" href="/css/style.css" media="all" />
+  <link rel="stylesheet" href="/css/style-dark.css" media="all and (prefers-color-scheme: dark)" />
+
   <link rel="stylesheet" href="/css/syntax.css" media="all" />
-  <link rel="stylesheet" href="/css/prism.css" media="all" />
   <link rel="stylesheet" href="/css/custom.css" media="all" />
+
+  <script src="/js/script.js"></script>
+  <script src="/js/custom.js"></script>
+  <script defer src="/js/fontawesome.js"></script>
 </head>
 
 <body>
@@ -67,159 +71,286 @@
         </li>
       </ul>
       
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#安装docker与docker-compose">安装docker与docker-compose</a></li>
+    <li><a href="#部署harbor">部署Harbor</a></li>
+    <li><a href="#客户端设置">客户端设置</a>
+      <ul>
+        <li><a href="#需要上传则需要登录">需要上传，则需要登录</a></li>
+        <li><a href="#若只需要下载镜像则只需导入证书并添加hosts文件内容即可">若只需要下载镜像，则只需导入证书并添加hosts文件内容即可</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+</aside>
       <p>搭建私有容器云平台离不开镜像仓库，本文介绍如何通过Harbor搭建私有镜像仓库。</p>
-
 <h1 id="安装docker与docker-compose">安装docker与docker-compose</h1>
-
 <p>这里以centos系统为例安装docker（按照docker官方提示进行即可，后续配置过程中会描述与ubuntu的差异）。</p>
-
-<pre><code class="language-bash"># install docker
-yum install -y yum-utils device-mapper-persistent-data lvm2
-yum-config-manager --add-repo \
-    https://download.docker.com/linux/centos/docker-ce.repo
-yum install -y docker-ce
-systemctl enable docker
-systemctl start docker
-
-# install docker-compose
-yum install -y epel-release
-yum install -y docker-compose
-</code></pre>
-
-<h1 id="部署harbor">部署Harbor</h1>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># install docker</span>
+</span></span><span class="line"><span class="cl">yum install -y yum-utils device-mapper-persistent-data lvm2
+</span></span><span class="line"><span class="cl">yum-config-manager --add-repo <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    https://download.docker.com/linux/centos/docker-ce.repo
+</span></span><span class="line"><span class="cl">yum install -y docker-ce
+</span></span><span class="line"><span class="cl">systemctl <span class="nb">enable</span> docker
+</span></span><span class="line"><span class="cl">systemctl start docker
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># install docker-compose</span>
+</span></span><span class="line"><span class="cl">yum install -y epel-release
+</span></span><span class="line"><span class="cl">yum install -y docker-compose
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="部署harbor">部署Harbor</h1>
 <p>下载并解压Harbor的离线压缩包。</p>
-
-<pre><code class="language-bash">cd /opt
-wget https://storage.googleapis.com/harbor-releases/harbor-offline-installer-v1.6.1.tgz
-tar xf harbor-offline-installer-v1.6.1.tgz &amp;&amp; cd harbor
-</code></pre>
-
-<p>为了安全性，与后续部署的便捷性，我们需要准备一对证书与密钥文件。注意“Common Name“的内容，一定要是<code>domain name</code>，而不能填写<code>ip</code>，而且最好填写三段式的域名。</p>
-
-<pre><code class="language-bash">mkdir certs &amp;&amp; cd certs
-
-openssl req -newkey rsa:4096 -nodes -keyout domain.key -x509 -days 3650 -out domain.crt
-Generating a 4096 bit RSA private key
-...........................................................................................++
-.......................++
-writing new private key to 'domain.key'
------
-You are about to be asked to enter information that will be incorporated
-into your certificate request.
-What you are about to enter is what is called a Distinguished Name or a DN.
-There are quite a few fields but you can leave some blank
-For some fields there will be a default value,
-If you enter '.', the field will be left blank.
------
-Country Name (2 letter code) [AU]:CN
-State or Province Name (full name) [Some-State]:Beijing
-Locality Name (eg, city) []:Beijing
-Organization Name (eg, company) [Internet Widgits Pty Ltd]:
-Organizational Unit Name (eg, section) []:
-Common Name (e.g. server FQDN or YOUR name) []:reg.localregistry.com
-Email Address []:
-</code></pre>
-
-<p>接下来，我们需要对Harbor的设置稍作修改。需要注意<code>hostname</code>要保持与生成密钥时的<code>Common Name</code>一致。</p>
-
-<pre><code class="language-bash">pwd
-/opt/harbor
-ls certs/
-domain.crt  domain.key
-
-grep hostname harbor.cfg 
-#The IP address or hostname to access admin UI and registry service.
-hostname = reg.localregistry.com
-
-grep ssl_cert harbor.cfg
-ssl_cert = /opt/harbor/certs/domain.crt
-ssl_cert_key = /opt/harbor/certs/domain.key
-</code></pre>
-
-<p>然后便可以部署Harbor。</p>
-
-<pre><code class="language-bash">./prepare 
-Generated and saved secret to file: /data/secretkey
-Generated configuration file: ./common/config/nginx/nginx.conf
-Generated configuration file: ./common/config/adminserver/env
-Generated configuration file: ./common/config/ui/env
-Generated configuration file: ./common/config/registry/config.yml
-Generated configuration file: ./common/config/db/env
-Generated configuration file: ./common/config/jobservice/env
-Generated configuration file: ./common/config/jobservice/config.yml
-Generated configuration file: ./common/config/log/logrotate.conf
-Generated configuration file: ./common/config/registryctl/env
-Generated configuration file: ./common/config/ui/app.conf
-Generated certificate, key file: ./common/config/ui/private_key.pem, cert file: ./common/config/registry/root.crt
-The configuration files are ready, please use docker-compose to start the service.
-
-./install.sh
-</code></pre>
-
-<p>设置Harbor开机自启动。</p>
-
-<pre><code class="language-bash">echo &quot;/usr/bin/docker-compose -f /opt/harbor/docker-compose.yml up -d&quot; &gt;&gt; /etc/rc.d/rc.local
-</code></pre>
-
-<h1 id="客户端设置">客户端设置</h1>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nb">cd</span> /opt
+</span></span><span class="line"><span class="cl">wget https://storage.googleapis.com/harbor-releases/harbor-offline-installer-v1.6.1.tgz
+</span></span><span class="line"><span class="cl">tar xf harbor-offline-installer-v1.6.1.tgz <span class="o">&amp;&amp;</span> <span class="nb">cd</span> harbor
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>为了安全性，与后续部署的便捷性，我们需要准备一对证书与密钥文件。注意“Common Name“的内容，一定要是<code>domain name</code>，而不能填写<code>ip</code>，而且最好填写三段式的域名。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">mkdir certs <span class="o">&amp;&amp;</span> <span class="nb">cd</span> certs
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">openssl req -newkey rsa:4096 -nodes -keyout domain.key -x509 -days <span class="m">3650</span> -out domain.crt
+</span></span><span class="line"><span class="cl">Generating a <span class="m">4096</span> bit RSA private key
+</span></span><span class="line"><span class="cl">...........................................................................................++
+</span></span><span class="line"><span class="cl">.......................++
+</span></span><span class="line"><span class="cl">writing new private key to <span class="s1">&#39;domain.key&#39;</span>
+</span></span><span class="line"><span class="cl">-----
+</span></span><span class="line"><span class="cl">You are about to be asked to enter information that will be incorporated
+</span></span><span class="line"><span class="cl">into your certificate request.
+</span></span><span class="line"><span class="cl">What you are about to enter is what is called a Distinguished Name or a DN.
+</span></span><span class="line"><span class="cl">There are quite a few fields but you can leave some blank
+</span></span><span class="line"><span class="cl">For some fields there will be a default value,
+</span></span><span class="line"><span class="cl">If you enter <span class="s1">&#39;.&#39;</span>, the field will be left blank.
+</span></span><span class="line"><span class="cl">-----
+</span></span><span class="line"><span class="cl">Country Name <span class="o">(</span><span class="m">2</span> letter code<span class="o">)</span> <span class="o">[</span>AU<span class="o">]</span>:CN
+</span></span><span class="line"><span class="cl">State or Province Name <span class="o">(</span>full name<span class="o">)</span> <span class="o">[</span>Some-State<span class="o">]</span>:Beijing
+</span></span><span class="line"><span class="cl">Locality Name <span class="o">(</span>eg, city<span class="o">)</span> <span class="o">[]</span>:Beijing
+</span></span><span class="line"><span class="cl">Organization Name <span class="o">(</span>eg, company<span class="o">)</span> <span class="o">[</span>Internet Widgits Pty Ltd<span class="o">]</span>:
+</span></span><span class="line"><span class="cl">Organizational Unit Name <span class="o">(</span>eg, section<span class="o">)</span> <span class="o">[]</span>:
+</span></span><span class="line"><span class="cl">Common Name <span class="o">(</span>e.g. server FQDN or YOUR name<span class="o">)</span> <span class="o">[]</span>:reg.localregistry.com
+</span></span><span class="line"><span class="cl">Email Address <span class="o">[]</span>:
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>接下来，我们需要对Harbor的设置稍作修改。需要注意<code>hostname</code>要保持与生成密钥时的<code>Common Name</code>一致。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nb">pwd</span>
+</span></span><span class="line"><span class="cl">/opt/harbor
+</span></span><span class="line"><span class="cl">ls certs/
+</span></span><span class="line"><span class="cl">domain.crt  domain.key
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">grep hostname harbor.cfg 
+</span></span><span class="line"><span class="cl"><span class="c1">#The IP address or hostname to access admin UI and registry service.</span>
+</span></span><span class="line"><span class="cl"><span class="nv">hostname</span> <span class="o">=</span> reg.localregistry.com
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">grep ssl_cert harbor.cfg
+</span></span><span class="line"><span class="cl"><span class="nv">ssl_cert</span> <span class="o">=</span> /opt/harbor/certs/domain.crt
+</span></span><span class="line"><span class="cl"><span class="nv">ssl_cert_key</span> <span class="o">=</span> /opt/harbor/certs/domain.key
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>然后便可以部署Harbor。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">./prepare 
+</span></span><span class="line"><span class="cl">Generated and saved secret to file: /data/secretkey
+</span></span><span class="line"><span class="cl">Generated configuration file: ./common/config/nginx/nginx.conf
+</span></span><span class="line"><span class="cl">Generated configuration file: ./common/config/adminserver/env
+</span></span><span class="line"><span class="cl">Generated configuration file: ./common/config/ui/env
+</span></span><span class="line"><span class="cl">Generated configuration file: ./common/config/registry/config.yml
+</span></span><span class="line"><span class="cl">Generated configuration file: ./common/config/db/env
+</span></span><span class="line"><span class="cl">Generated configuration file: ./common/config/jobservice/env
+</span></span><span class="line"><span class="cl">Generated configuration file: ./common/config/jobservice/config.yml
+</span></span><span class="line"><span class="cl">Generated configuration file: ./common/config/log/logrotate.conf
+</span></span><span class="line"><span class="cl">Generated configuration file: ./common/config/registryctl/env
+</span></span><span class="line"><span class="cl">Generated configuration file: ./common/config/ui/app.conf
+</span></span><span class="line"><span class="cl">Generated certificate, key file: ./common/config/ui/private_key.pem, cert file: ./common/config/registry/root.crt
+</span></span><span class="line"><span class="cl">The configuration files are ready, please use docker-compose to start the service.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">./install.sh
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>设置Harbor开机自启动。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nb">echo</span> <span class="s2">&#34;/usr/bin/docker-compose -f /opt/harbor/docker-compose.yml up -d&#34;</span> &gt;&gt; /etc/rc.d/rc.local
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="客户端设置">客户端设置</h1>
 <p>若希望通过docker连接我们刚刚部署的Harbor，我们需要将证书文件导入到可信列表中，下面将分别针对Centos与Ubuntu环境进行说明。</p>
-
-<h2 id="需要上传-则需要登录">需要上传，则需要登录</h2>
-
+<h2 id="需要上传则需要登录">需要上传，则需要登录</h2>
 <ul>
 <li>Centos</li>
 </ul>
-
-<pre><code class="language-bash">mkdir -p /etc/docker/certs.d/localregistry.com
-cp certs/domain.crt /etc/docker/certs.d/localregistry.com/
-cp certs/domain.crt /etc/pki/ca-trust/source/anchors/localregistry.com.crt
-update-ca-trust
-systemctl stop docker
-systemctl start docker
-
-grep localregistry /etc/hosts
-192.168.0.130   reg.localregistry.com
-
-docker login reg.localregistry.com
-Username: admin
-Password: 
-WARNING! Your password will be stored unencrypted in /root/.docker/config.json.
-Configure a credential helper to remove this warning. See
-https://docs.docker.com/engine/reference/commandline/login/#credentials-store
-
-Login Succeeded
-</code></pre>
-
-<ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">mkdir -p /etc/docker/certs.d/localregistry.com
+</span></span><span class="line"><span class="cl">cp certs/domain.crt /etc/docker/certs.d/localregistry.com/
+</span></span><span class="line"><span class="cl">cp certs/domain.crt /etc/pki/ca-trust/source/anchors/localregistry.com.crt
+</span></span><span class="line"><span class="cl">update-ca-trust
+</span></span><span class="line"><span class="cl">systemctl stop docker
+</span></span><span class="line"><span class="cl">systemctl start docker
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">grep localregistry /etc/hosts
+</span></span><span class="line"><span class="cl">192.168.0.130   reg.localregistry.com
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">docker login reg.localregistry.com
+</span></span><span class="line"><span class="cl">Username: admin
+</span></span><span class="line"><span class="cl">Password: 
+</span></span><span class="line"><span class="cl">WARNING! Your password will be stored unencrypted in /root/.docker/config.json.
+</span></span><span class="line"><span class="cl">Configure a credential helper to remove this warning. See
+</span></span><span class="line"><span class="cl">https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Login Succeeded
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
 <li>Ubuntu</li>
 </ul>
-
-<pre><code class="language-bash">mkdir -p /etc/docker/certs.d/localregistry.com
-cp certs/domain.crt /etc/docker/certs.d/localregistry.com/
-cp certs/domain.crt /etc/ssl/certs/localregistry.com.crt
-update-ca-certificates
-systemctl stop docker
-systemctl start docker
-
-grep localregistry /etc/hosts
-192.168.0.130   reg.localregistry.com
-
-docker login reg.localregistry.com
-Username: admin
-Password:
-Login Succeeded 
-</code></pre>
-
-<h2 id="若只需要下载镜像-则只需导入证书并添加hosts文件内容即可">若只需要下载镜像，则只需导入证书并添加hosts文件内容即可</h2>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">mkdir -p /etc/docker/certs.d/localregistry.com
+</span></span><span class="line"><span class="cl">cp certs/domain.crt /etc/docker/certs.d/localregistry.com/
+</span></span><span class="line"><span class="cl">cp certs/domain.crt /etc/ssl/certs/localregistry.com.crt
+</span></span><span class="line"><span class="cl">update-ca-certificates
+</span></span><span class="line"><span class="cl">systemctl stop docker
+</span></span><span class="line"><span class="cl">systemctl start docker
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">grep localregistry /etc/hosts
+</span></span><span class="line"><span class="cl">192.168.0.130   reg.localregistry.com
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">docker login reg.localregistry.com
+</span></span><span class="line"><span class="cl">Username: admin
+</span></span><span class="line"><span class="cl">Password:
+</span></span><span class="line"><span class="cl">Login Succeeded 
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="若只需要下载镜像则只需导入证书并添加hosts文件内容即可">若只需要下载镜像，则只需导入证书并添加hosts文件内容即可</h2>
 <p>Pass。</p>
     </article>
-    <section class="license">
-        <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>
-        <br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.
-    </section>
+
+    
+
 
     <ul class="pager article-pager">
       <li class="pager-newer">
@@ -229,24 +360,17 @@ Login Succeeded
         <a href="/posts/2018-10-11-golang-nonreetrant-function/" data-toggle="tooltip" data-placement="top" title="Golang不可重入函数">Older &gt;</a>
       </li>
     </ul>
+  </div>
 
 
 <div class="site-footer">
-  <div class="copyright">&copy; Copyright 2018 Sarshes</div>
+  <div class="copyright">&copy; Copyright 2018-2023 Jnchk</div>
   <ul class="site-footer-items">
   </ul>
   <div class="powerdby">
     Powered by <a href="https://gohugo.io/">Hugo</a> and <a href="https://github.com/taikii/whiteplain">Whiteplain</a>
   </div>
 </div>
-<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
-
-<script src="/js/fontawesome.js"></script>
-<script src="/js/script.js"></script>
-<script src="/js/prism.js"></script>
-<script src="/js/custom.js"></script>
 
 
 </body>

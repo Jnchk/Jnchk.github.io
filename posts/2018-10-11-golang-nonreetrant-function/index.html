@@ -9,18 +9,22 @@
   <meta name="description" content="在同一时间点只会被运行一次的函数，我们称其为不可重入函数。本文介绍Go语言不可重入函数的实现方式。">
   <meta property="og:description" content="在同一时间点只会被运行一次的函数，我们称其为不可重入函数。本文介绍Go语言不可重入函数的实现方式。">
   <meta name="twitter:description" content="在同一时间点只会被运行一次的函数，我们称其为不可重入函数。本文介绍Go语言不可重入函数的实现方式。">
-  <meta name="author" content="Sarshes"/>
+  <meta name="author" content="Jnchk"/>
   <link rel='icon' type='image/x-icon' href="https://killmebaby.cc/img/favicon.ico" />
   <meta property="og:site_name" content="KillMeBaby" />
   <meta property="og:url" content="https://killmebaby.cc/posts/2018-10-11-golang-nonreetrant-function/" />
   <meta property="og:type" content="article" />
   <meta name="twitter:card" content="summary" />
-  <meta name="generator" content="Hugo 0.52" />
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+  <meta name="generator" content="Hugo 0.120.4">
   <link rel="stylesheet" href="/css/style.css" media="all" />
+  <link rel="stylesheet" href="/css/style-dark.css" media="all and (prefers-color-scheme: dark)" />
+
   <link rel="stylesheet" href="/css/syntax.css" media="all" />
-  <link rel="stylesheet" href="/css/prism.css" media="all" />
   <link rel="stylesheet" href="/css/custom.css" media="all" />
+
+  <script src="/js/script.js"></script>
+  <script src="/js/custom.js"></script>
+  <script defer src="/js/fontawesome.js"></script>
 </head>
 
 <body>
@@ -67,235 +71,413 @@
         </li>
       </ul>
       
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#使用场景">使用场景</a></li>
+    <li><a href="#阻塞不可重用">阻塞不可重用</a></li>
+    <li><a href="#非阻塞不可重用">非阻塞不可重用</a></li>
+    <li><a href="#非阻塞不可重入1">非阻塞不可重入1</a></li>
+    <li><a href="#两个非阻塞版本有何区别">两个非阻塞版本有何区别</a></li>
+    <li><a href="#总结">总结</a></li>
+    <li><a href="#参考链接">参考链接</a></li>
+  </ul>
+</nav>
+</aside>
       <p>在同一时间点只会被运行一次的函数，我们称其为不可重入函数。本文介绍Go语言不可重入函数的实现方式。</p>
-
 <h1 id="使用场景">使用场景</h1>
-
 <p>某个服务需要在多个goroutine中完成同一个任务，而这个任务中某一个步骤涉及goroutine之间共享的资源，如果我们不对这个过程做特殊处理，则可能会出现一些问题，比如下面的代码。</p>
-
-<pre><code class="language-go">package main
-  
-import (
-    &quot;fmt&quot;
-    &quot;time&quot;
-    &quot;sync&quot;
-)
-
-func main() {
-    wg := sync.WaitGroup{}
-    wg.Add(3)
-    for i,_ := range []int{1,2,3} {
-        index := i
-        go func() {
-            fmt.Printf(&quot;Goroutine %d do something...\n&quot;, index)
-            time.Sleep(2 * time.Second)
-            fmt.Printf(&quot;Goroutine %d end...\n&quot;, index)
-            wg.Done()
-        }()
-    }
-    wg.Wait()
-}
-</code></pre>
-
-<p>我们启动了三个goroutine，执行后会发现三个goroutine同时执行，共同等待2s之后一同退出。</p>
-
-<pre><code class="language-bash">go run main.go 
-Goroutine 2 do something...
-Goroutine 0 do something...
-Goroutine 1 do something...
-Goroutine 0 end...
-Goroutine 2 end...
-Goroutine 1 end...
-</code></pre>
-
-<h1 id="阻塞不可重用">阻塞不可重用</h1>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;time&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;sync&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">wg</span> <span class="o">:=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">WaitGroup</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">wg</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="nx">i</span><span class="p">,</span><span class="nx">_</span> <span class="o">:=</span> <span class="k">range</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">index</span> <span class="o">:=</span> <span class="nx">i</span>
+</span></span><span class="line"><span class="cl">        <span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Goroutine %d do something...\n&#34;</span><span class="p">,</span> <span class="nx">index</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">time</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Goroutine %d end...\n&#34;</span><span class="p">,</span> <span class="nx">index</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">wg</span><span class="p">.</span><span class="nf">Done</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}()</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">wg</span><span class="p">.</span><span class="nf">Wait</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>我们启动了三个goroutine，执行后会发现三个goroutine同时执行，共同等待2s之后一同退出。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">go run main.go 
+</span></span><span class="line"><span class="cl">Goroutine <span class="m">2</span> <span class="k">do</span> something...
+</span></span><span class="line"><span class="cl">Goroutine <span class="m">0</span> <span class="k">do</span> something...
+</span></span><span class="line"><span class="cl">Goroutine <span class="m">1</span> <span class="k">do</span> something...
+</span></span><span class="line"><span class="cl">Goroutine <span class="m">0</span> end...
+</span></span><span class="line"><span class="cl">Goroutine <span class="m">2</span> end...
+</span></span><span class="line"><span class="cl">Goroutine <span class="m">1</span> end...
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="阻塞不可重用">阻塞不可重用</h1>
 <p>一般来说，我们可以使用锁来在解决不同goroutine之间抢占资源的问题。Go语言中的<code>sync.Mutex</code>即可以用来实现锁，使用方式如下：</p>
-
-<pre><code class="language-go">package main                                                                                 
-                                                                                             
-import (                                                                                     
-    &quot;fmt&quot;                                                                                    
-    &quot;time&quot;                                                                                   
-    &quot;sync&quot;                                                                                   
-)                                                                                            
-                                                                                             
-func main() {                                                                                
-    var mu sync.Mutex
-    wg := sync.WaitGroup{}                                                                   
-    wg.Add(3)
-    for i,_ := range []int{1,2,3} {                                                          
-        index := i
-        go func() {
-            mu.Lock()
-            defer mu.Unlock()
-            fmt.Printf(&quot;Goroutine %d do something...\n&quot;, index)                              
-            time.Sleep(2 * time.Second)                                                      
-            fmt.Printf(&quot;Goroutine %d end...\n&quot;, index)                                       
-            wg.Done()                                                                        
-        }()                                                                                  
-    }
-    wg.Wait()
-}
-</code></pre>
-
-<p>执行过程与前面的例子大不相同，没有拿到锁的goroutine会阻塞，直到获取到锁后则继续运行。所以我们看到的是三个goroutine依次完成自己的运行过程。</p>
-
-<pre><code class="language-bash">go run main.go 
-Goroutine 2 do something...
-Goroutine 2 end...
-Goroutine 0 do something...
-Goroutine 0 end...
-Goroutine 1 do something...
-Goroutine 1 end...
-</code></pre>
-
-<p>这种方式在很多场景是可以满足需求的，但有时我们不希望goroutine阻塞等待，而是直接返回，继续做其他工作，那么这种方式就不适用了。</p>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>                                                                                 
+</span></span><span class="line"><span class="cl">                                                                                             
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>                                                                                     
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;fmt&#34;</span>                                                                                    
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;time&#34;</span>                                                                                   
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;sync&#34;</span>                                                                                   
+</span></span><span class="line"><span class="cl"><span class="p">)</span>                                                                                            
+</span></span><span class="line"><span class="cl">                                                                                             
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>                                                                                
+</span></span><span class="line"><span class="cl">    <span class="kd">var</span> <span class="nx">mu</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">wg</span> <span class="o">:=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">WaitGroup</span><span class="p">{}</span>                                                                   
+</span></span><span class="line"><span class="cl">    <span class="nx">wg</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="nx">i</span><span class="p">,</span><span class="nx">_</span> <span class="o">:=</span> <span class="k">range</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}</span> <span class="p">{</span>                                                          
+</span></span><span class="line"><span class="cl">        <span class="nx">index</span> <span class="o">:=</span> <span class="nx">i</span>
+</span></span><span class="line"><span class="cl">        <span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">mu</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">            <span class="k">defer</span> <span class="nx">mu</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Goroutine %d do something...\n&#34;</span><span class="p">,</span> <span class="nx">index</span><span class="p">)</span>                              
+</span></span><span class="line"><span class="cl">            <span class="nx">time</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span>                                                      
+</span></span><span class="line"><span class="cl">            <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Goroutine %d end...\n&#34;</span><span class="p">,</span> <span class="nx">index</span><span class="p">)</span>                                       
+</span></span><span class="line"><span class="cl">            <span class="nx">wg</span><span class="p">.</span><span class="nf">Done</span><span class="p">()</span>                                                                        
+</span></span><span class="line"><span class="cl">        <span class="p">}()</span>                                                                                  
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">wg</span><span class="p">.</span><span class="nf">Wait</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>执行过程与前面的例子大不相同，没有拿到锁的goroutine会阻塞，直到获取到锁后则继续运行。所以我们看到的是三个goroutine依次完成自己的运行过程。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">go run main.go 
+</span></span><span class="line"><span class="cl">Goroutine <span class="m">2</span> <span class="k">do</span> something...
+</span></span><span class="line"><span class="cl">Goroutine <span class="m">2</span> end...
+</span></span><span class="line"><span class="cl">Goroutine <span class="m">0</span> <span class="k">do</span> something...
+</span></span><span class="line"><span class="cl">Goroutine <span class="m">0</span> end...
+</span></span><span class="line"><span class="cl">Goroutine <span class="m">1</span> <span class="k">do</span> something...
+</span></span><span class="line"><span class="cl">Goroutine <span class="m">1</span> end...
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这种方式在很多场景是可以满足需求的，但有时我们不希望goroutine阻塞等待，而是直接返回，继续做其他工作，那么这种方式就不适用了。</p>
 <h1 id="非阻塞不可重用">非阻塞不可重用</h1>
-
 <p>我们知道使用mutex的话是会使goroutine阻塞的，那么有没有什么办法能让获取mutex的过程不阻塞呢？有些朋友想到了下面的方式来实现：</p>
-
-<pre><code class="language-go">package locker
-  
-import &quot;sync&quot;
-
-type Locker struct {
-    l1 sync.Mutex
-    l2 sync.Mutex
-    locked bool
-}
-
-func (doubleLocker *Locker) Lock() (success bool) {
-    doubleLocker.l1.Lock()
-    defer doubleLocker.l1.Unlock()
-    if doubleLocker.locked == false {
-        doubleLocker.locked = true
-        success = true
-        doubleLocker.l2.Lock()
-    }
-    return
-}
-
-func (doubleLocker *Locker) Unlock() {
-    doubleLocker.l1.Lock()
-    defer doubleLocker.l1.Unlock()
-    doubleLocker.locked = false
-    doubleLocker.l2.Unlock()
-}
-</code></pre>
-
-<p>我们定义了一个<code>Locker</code>结构，其中的<code>l2</code>是为读写数据而加的锁。<code>success</code>用来做状态判断，如果其值为false，那么获取<code>l2</code>锁，并对数据进行处理；否则直接返回。这个过程肯定不是原子的，放在任何并发环境里都会出现问题。所以我们需要另一个锁<code>l1</code>来对这个判断过程加锁，使其成为“原子”操作。而每个goroutine获取<code>l1</code>的持续时间都很短，造成的阻塞可以忽略不记，从而达到非阻塞的效果。</p>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">locker</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="s">&#34;sync&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Locker</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">l1</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">l2</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">locked</span> <span class="kt">bool</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">doubleLocker</span> <span class="o">*</span><span class="nx">Locker</span><span class="p">)</span> <span class="nf">Lock</span><span class="p">()</span> <span class="p">(</span><span class="nx">success</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">doubleLocker</span><span class="p">.</span><span class="nx">l1</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">defer</span> <span class="nx">doubleLocker</span><span class="p">.</span><span class="nx">l1</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">doubleLocker</span><span class="p">.</span><span class="nx">locked</span> <span class="o">==</span> <span class="kc">false</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">doubleLocker</span><span class="p">.</span><span class="nx">locked</span> <span class="p">=</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">success</span> <span class="p">=</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">doubleLocker</span><span class="p">.</span><span class="nx">l2</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">doubleLocker</span> <span class="o">*</span><span class="nx">Locker</span><span class="p">)</span> <span class="nf">Unlock</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">doubleLocker</span><span class="p">.</span><span class="nx">l1</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">defer</span> <span class="nx">doubleLocker</span><span class="p">.</span><span class="nx">l1</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">doubleLocker</span><span class="p">.</span><span class="nx">locked</span> <span class="p">=</span> <span class="kc">false</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">doubleLocker</span><span class="p">.</span><span class="nx">l2</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>我们定义了一个<code>Locker</code>结构，其中的<code>l2</code>是为读写数据而加的锁。<code>success</code>用来做状态判断，如果其值为false，那么获取<code>l2</code>锁，并对数据进行处理；否则直接返回。这个过程肯定不是原子的，放在任何并发环境里都会出现问题。所以我们需要另一个锁<code>l1</code>来对这个判断过程加锁，使其成为“原子”操作。而每个goroutine获取<code>l1</code>的持续时间都很短，造成的阻塞可以忽略不记，从而达到非阻塞的效果。</p>
 <p>调用方式如下：</p>
-
-<pre><code class="language-go">package main
-  
-import (
-    &quot;fmt&quot;
-    &quot;time&quot;
-    &quot;sync&quot;
-    &quot;github.com/Jnchk/codecollection/go/others/nonreentrant/asyncmutex/locker&quot;
-)
-
-func main() {
-    var doubleLocker locker.Locker
-    wg := sync.WaitGroup{}
-    wg.Add(3)
-    for i,_ := range []int{1,2,3} {
-        index := i
-        go func() {
-            if doubleLocker.Lock() {
-                defer doubleLocker.Unlock()
-            } else {
-                wg.Done()
-                return
-            }
-            fmt.Printf(&quot;Goroutine %d do something...\n&quot;, index)
-            time.Sleep(2 * time.Second)
-            fmt.Printf(&quot;Goroutine %d end...\n&quot;, index)
-            wg.Done()
-        }()
-    }
-    wg.Wait()
-}
-</code></pre>
-
-<p>执行效果如下（只运行了一个goroutine）：</p>
-
-<pre><code class="language-bash">go run main.go 
-Goroutine 2 do something...
-Goroutine 2 end...
-</code></pre>
-
-<h1 id="非阻塞不可重入1">非阻塞不可重入1</h1>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;time&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;sync&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/Jnchk/codecollection/go/others/nonreentrant/asyncmutex/locker&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">var</span> <span class="nx">doubleLocker</span> <span class="nx">locker</span><span class="p">.</span><span class="nx">Locker</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">wg</span> <span class="o">:=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">WaitGroup</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">wg</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="nx">i</span><span class="p">,</span><span class="nx">_</span> <span class="o">:=</span> <span class="k">range</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">index</span> <span class="o">:=</span> <span class="nx">i</span>
+</span></span><span class="line"><span class="cl">        <span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="nx">doubleLocker</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="k">defer</span> <span class="nx">doubleLocker</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">wg</span><span class="p">.</span><span class="nf">Done</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">                <span class="k">return</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Goroutine %d do something...\n&#34;</span><span class="p">,</span> <span class="nx">index</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">time</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Goroutine %d end...\n&#34;</span><span class="p">,</span> <span class="nx">index</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">wg</span><span class="p">.</span><span class="nf">Done</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}()</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">wg</span><span class="p">.</span><span class="nf">Wait</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>执行效果如下（只运行了一个goroutine）：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">go run main.go 
+</span></span><span class="line"><span class="cl">Goroutine <span class="m">2</span> <span class="k">do</span> something...
+</span></span><span class="line"><span class="cl">Goroutine <span class="m">2</span> end...
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="非阻塞不可重入1">非阻塞不可重入1</h1>
 <p>事实上，go语言已经帮助我们完成了上面做的事情，功能包含在了<code>sync/atomic</code>包中。代码如下：</p>
-
-<pre><code class="language-go">package main
-  
-import (
-    &quot;fmt&quot;
-    &quot;time&quot;
-    &quot;sync&quot;
-    &quot;sync/atomic&quot;
-)
-
-func main() {
-    wg := sync.WaitGroup{}
-    var reentrance int64
-    wg.Add(3)
-    for i,_ := range []int{1,2,3} {
-        index := i
-        go func() {
-            if atomic.CompareAndSwapInt64(&amp;reentrance, 0, 1) {
-                defer atomic.StoreInt64(&amp;reentrance, 0)
-            } else {
-                wg.Done()
-                return
-            }
-            fmt.Printf(&quot;Goroutine %d do something...\n&quot;, index)
-            time.Sleep(2 * time.Second)
-            fmt.Printf(&quot;Goroutine %d end...\n&quot;, index)
-            wg.Done()
-        }()
-    }
-    wg.Wait()
-}
-</code></pre>
-
-<p>上面的代码中我们使用了<code>atomic.CompareAndSwapInt64</code>这个函数。调用时，函数会首先判断<code>reentrance</code>是否为0，如果是0则将其赋值为1，并返回true。否则（即<code>reentrance</code>为1）直接返回false。这所有操作整体是原子的。</p>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;time&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;sync&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;sync/atomic&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">wg</span> <span class="o">:=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">WaitGroup</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">var</span> <span class="nx">reentrance</span> <span class="kt">int64</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">wg</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="nx">i</span><span class="p">,</span><span class="nx">_</span> <span class="o">:=</span> <span class="k">range</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">index</span> <span class="o">:=</span> <span class="nx">i</span>
+</span></span><span class="line"><span class="cl">        <span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="nx">atomic</span><span class="p">.</span><span class="nf">CompareAndSwapInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">reentrance</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="k">defer</span> <span class="nx">atomic</span><span class="p">.</span><span class="nf">StoreInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">reentrance</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">wg</span><span class="p">.</span><span class="nf">Done</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">                <span class="k">return</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Goroutine %d do something...\n&#34;</span><span class="p">,</span> <span class="nx">index</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">time</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Goroutine %d end...\n&#34;</span><span class="p">,</span> <span class="nx">index</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">wg</span><span class="p">.</span><span class="nf">Done</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}()</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">wg</span><span class="p">.</span><span class="nf">Wait</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>上面的代码中我们使用了<code>atomic.CompareAndSwapInt64</code>这个函数。调用时，函数会首先判断<code>reentrance</code>是否为0，如果是0则将其赋值为1，并返回true。否则（即<code>reentrance</code>为1）直接返回false。这所有操作整体是原子的。</p>
 <p>执行结果与我们自己实现的版本是一样的。</p>
-
-<pre><code class="language-bash">go run main.go 
-Goroutine 2 do something...
-Goroutine 2 end...
-</code></pre>
-
-<h1 id="两个非阻塞版本有何区别">两个非阻塞版本有何区别</h1>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">go run main.go 
+</span></span><span class="line"><span class="cl">Goroutine <span class="m">2</span> <span class="k">do</span> something...
+</span></span><span class="line"><span class="cl">Goroutine <span class="m">2</span> end...
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="两个非阻塞版本有何区别">两个非阻塞版本有何区别</h1>
 <p>实现逻辑上没有明显区别，我们自己实现的版本其实就是把<code>atomic.CompareAndSwapInt64</code>与<code>atomic.StoreInt64</code>的实现逻辑描述了一遍。</p>
-
 <p>而论具体细节，我们先看<code>atomic.CompareAndSwapInt64</code>。这个函数实际上在go源码中是通过汇编实现的，最终实现内容在<a href="https://github.com/golang/go/tree/master/src/runtime/internal/atomic">src/runtime/internal/atomic</a>目录下。</p>
-
 <p>而<code>mutex</code>，也就是<a href="https://raw.githubusercontent.com/golang/go/master/src/sync/mutex.go">mutex.go</a>，我们可以看到其<code>Lock()</code>与<code>Unlock()</code>也是通过<code>atomic</code>系列函数来实现的。也就是说我们自己实现的版本虽然功能相同，但却在无形当中增加了许多不必要的逻辑。从这方面考虑，还是使用<code>atomic</code>更直接一些。</p>
-
 <h1 id="总结">总结</h1>
-
 <p>本文介绍了不可重用函数在阻塞与非阻塞两种场景下的基本实现。</p>
-
 <h1 id="参考链接">参考链接</h1>
-
 <ul>
 <li><a href="https://blog.csdn.net/ZVAyIVqt0UFji/article/details/82766206">Golang之不可重入函数实现</a></li>
 <li><a href="https://my.oschina.net/cxz001/blog/872951">golang非阻塞锁的简单实现</a></li>
 </ul>
     </article>
-    <section class="license">
-        <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>
-        <br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.
-    </section>
+
+    
+
 
     <ul class="pager article-pager">
       <li class="pager-newer">
@@ -305,46 +487,17 @@ Goroutine 2 end...
         <a href="/posts/2018-09-03-ss&#43;privoxy%E5%AE%9E%E7%8E%B0pac%E4%BB%A3%E7%90%86/" data-toggle="tooltip" data-placement="top" title="SS&#43;privoxy实现pac代理">Older &gt;</a>
       </li>
     </ul>
-    <div class="disqus-comments">
-      <div id="disqus_thread"></div>
-<script type="application/javascript">
-    var disqus_config = function () {
-    
-    
-    
-    };
-    (function() {
-        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
-            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
-            return;
-        }
-        var d = document, s = d.createElement('script'); s.async = true;
-        s.src = '//' + "killmebaby" + '.disqus.com/embed.js';
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
-    </div>
+  </div>
 
 
 <div class="site-footer">
-  <div class="copyright">&copy; Copyright 2018 Sarshes</div>
+  <div class="copyright">&copy; Copyright 2018-2023 Jnchk</div>
   <ul class="site-footer-items">
   </ul>
   <div class="powerdby">
     Powered by <a href="https://gohugo.io/">Hugo</a> and <a href="https://github.com/taikii/whiteplain">Whiteplain</a>
   </div>
 </div>
-<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
-
-<script src="/js/fontawesome.js"></script>
-<script src="/js/script.js"></script>
-<script src="/js/prism.js"></script>
-<script src="/js/custom.js"></script>
 
 
 </body>

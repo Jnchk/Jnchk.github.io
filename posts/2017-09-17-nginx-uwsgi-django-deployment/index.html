@@ -9,18 +9,22 @@
   <meta name="description" content="本文介绍如何部署nginx&#43;uWSGI&#43;Django的生产环境。">
   <meta property="og:description" content="本文介绍如何部署nginx&#43;uWSGI&#43;Django的生产环境。">
   <meta name="twitter:description" content="本文介绍如何部署nginx&#43;uWSGI&#43;Django的生产环境。">
-  <meta name="author" content="Sarshes"/>
+  <meta name="author" content="Jnchk"/>
   <link rel='icon' type='image/x-icon' href="https://killmebaby.cc/img/favicon.ico" />
   <meta property="og:site_name" content="KillMeBaby" />
   <meta property="og:url" content="https://killmebaby.cc/posts/2017-09-17-nginx-uwsgi-django-deployment/" />
   <meta property="og:type" content="article" />
   <meta name="twitter:card" content="summary" />
-  <meta name="generator" content="Hugo 0.52" />
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+  <meta name="generator" content="Hugo 0.120.4">
   <link rel="stylesheet" href="/css/style.css" media="all" />
+  <link rel="stylesheet" href="/css/style-dark.css" media="all and (prefers-color-scheme: dark)" />
+
   <link rel="stylesheet" href="/css/syntax.css" media="all" />
-  <link rel="stylesheet" href="/css/prism.css" media="all" />
   <link rel="stylesheet" href="/css/custom.css" media="all" />
+
+  <script src="/js/script.js"></script>
+  <script src="/js/custom.js"></script>
+  <script defer src="/js/fontawesome.js"></script>
 </head>
 
 <body>
@@ -67,407 +71,582 @@
         </li>
       </ul>
       
+<aside class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#通过uwsgi和nginx部署你的django项目">通过uWSGI和nginx部署你的Django项目</a></li>
+    <li><a href="#关于本教程">关于本教程</a></li>
+    <li><a href="#为什么要这样做">为什么要这样做</a></li>
+    <li><a href="#开始前要做的事">开始前要做的事</a>
+      <ul>
+        <li><a href="#virtualenv">virtualenv</a></li>
+        <li><a href="#django">Django</a></li>
+        <li><a href="#关于域名和端口">关于域名和端口</a></li>
+      </ul>
+    </li>
+    <li><a href="#uwsgi的基本安装与配置">uWSGI的基本安装与配置</a>
+      <ul>
+        <li><a href="#在virtualenv环境中安装uwsgi">在virtualenv环境中安装uWSGI</a></li>
+        <li><a href="#基础测试">基础测试</a></li>
+        <li><a href="#测试你的django工程">测试你的Django工程</a></li>
+      </ul>
+    </li>
+    <li><a href="#nginx基础">nginx基础</a>
+      <ul>
+        <li><a href="#安装nginx">安装nginx</a></li>
+        <li><a href="#为你的站点配置nginx">为你的站点配置nginx</a></li>
+        <li><a href="#部署static文件">部署static文件</a></li>
+        <li><a href="#nginx基础测试">nginx基础测试</a></li>
+      </ul>
+    </li>
+    <li><a href="#nginxuwsgi和testpy">nginx、uWSGI和test.py</a></li>
+    <li><a href="#使用unix-sockets代替端口">使用Unix sockets代替端口</a></li>
+    <li><a href="#如果出现了问题">如果出现了问题</a></li>
+    <li><a href="#在uwsgi和nginx的协助下运行django应用">在uwsgi和nginx的协助下运行Django应用</a></li>
+    <li><a href="#在ini文件中配置uwsgi">在.ini文件中配置uWSGI</a></li>
+    <li><a href="#在系统环境中安装uwsgi">在系统环境中安装uWSGI</a></li>
+    <li><a href="#emperor模式">Emperor模式</a></li>
+    <li><a href="#设置uwsgi开机启动">设置uWSGI开机启动</a></li>
+    <li><a href="#更多设置">更多设置</a>
+      <ul>
+        <li><a href="#nginx">nginx</a></li>
+        <li><a href="#uwsgi">uWSGI</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+</aside>
       <p>本文介绍如何部署nginx+uWSGI+Django的生产环境。</p>
-
 <h1 id="通过uwsgi和nginx部署你的django项目">通过uWSGI和nginx部署你的Django项目</h1>
-
 <blockquote>
 <p>This tutorial is aimed at the Django user who wants to set up a production web server. It takes you through the steps required to set up Django so that it works nicely with uWSGI and nginx. <a href="http://uwsgi-docs.readthedocs.io/en/latest/tutorials/Django_and_nginx.html">原文链接</a>。</p>
 </blockquote>
-
 <p>本教程的目标人群是那些希望部署自己的web server的Django用户。本教程会指引你按照步骤使Django与uWSGI和nginx很好的工作在一起。本教程对三个软件都有讲解，并提供了一整套工作流程。</p>
-
 <p><a href="http://djangoproject.com/">Django</a>使一种Python的high-level web框架，提倡快速开发与简洁的设计。</p>
-
 <p><a href="http://nginx.org/">nginx</a>使一款免费、开源、高性能的HTTP服务器，同时也可以作为反向代理或IMAP/POP3服务器</p>
-
 <h1 id="关于本教程">关于本教程</h1>
-
 <p>这只是一篇教程，并非是为了作为引用说明来编写的。请不要过分追求部署过程中过于详尽的细节。</p>
-
 <p>对于Django部署来说，nginx和uWSGI都是很好的选择，但这并不是必须的，或者说官方的。这两款软件都非常棒，花费时间去研究他们是很值得的。</p>
-
 <p>这里我们提供的Django部署方式是一个很好的方法，但并不是唯一的选择。在某些特定情况，这也许并不是最好的选择。</p>
-
 <p>然而我们提供的方法将会是最可靠、最简单的方法。本教程所涵盖的内容将想你介绍一些你在使用任何软件部署Django时都需要了解的方法和策略。当像你展现了设置过程，并描述了进行这些设置的前提之后，你将掌握采用其他方法部署Django所需要的基本知识。</p>
-
 <p>这篇文章针对你正在使用的系统做了部分假设。</p>
-
 <p>我们假设你使用的是Unix-like系统，并且包含包管理系统。但是如果你想问像“Mac OSX中有什么包管理系统的替代品？”这样的问题，你可能很容易找到相关的答案。</p>
-
 <p>并且，本教程针对1.4或更新版本的Django，这些版本的Django会在工程目录下自动创建wsgi模块。The instructions会针对之前的版本作介绍，你可能需要自己生成wsgi模块，并且Django工程的目录也会有些许不同。</p>
-
 <h1 id="为什么要这样做">为什么要这样做</h1>
-
 <p>Web服务器要面对外网的流量，它可以通过文件系统提供HTML、images、CSS等文件。但是Web服务器不能和Django应用直接通信，它需要某些程序运行这些Django应用，为其提供客户端传来的请求，并返回Django应用的回应。</p>
-
 <p>Web Server Gateway Interface，也就是WSGI就是为了这个而存在的。WSGI is a Python standard。</p>
-
 <p>uWSGI是WSGI的一种实现。在本教程中我们将通过设置uWSGI来创建一个Unix socket，以WSGI协议来向web服务器返回回应。最后我们将按照如下结构完成我们的部署。</p>
-
-<pre><code class="language-relation">the web client &lt;-&gt; the web server &lt;-&gt; the socket &lt;-&gt; uwsgi &lt;-&gt; Django
-</code></pre>
-
-<h1 id="开始前要做的事">开始前要做的事</h1>
-
+<pre tabindex="0"><code class="language-relation" data-lang="relation">the web client &lt;-&gt; the web server &lt;-&gt; the socket &lt;-&gt; uwsgi &lt;-&gt; Django
+</code></pre><h1 id="开始前要做的事">开始前要做的事</h1>
 <h2 id="virtualenv">virtualenv</h2>
-
 <p>确保你在virtualenv中按照我们所需的软件（我们之后将介绍如何在系统范围内安装uwsgi）。</p>
-
-<pre><code class="language-bash">virtualenv uwsgi-tutorial
-cd uwsgi-tutorial
-source bin/activate
-</code></pre>
-
-<h2 id="django">Django</h2>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">virtualenv uwsgi-tutorial
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> uwsgi-tutorial
+</span></span><span class="line"><span class="cl"><span class="nb">source</span> bin/activate
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="django">Django</h2>
 <p>在virtualenv环境中安装Django，创建新工程，并切换到工程目录中。</p>
-
-<pre><code class="language-bash">pip install Django==1.10
-django-admin.py startproject mysite
-cd mysite
-</code></pre>
-
-<h2 id="关于域名和端口">关于域名和端口</h2>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">pip install <span class="nv">Django</span><span class="o">==</span>1.10
+</span></span><span class="line"><span class="cl">django-admin.py startproject mysite
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> mysite
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="关于域名和端口">关于域名和端口</h2>
 <p>在本教程中我们可以将域名设置为<code>example.com</code>。请按照你的实际环境配置。</p>
-
 <p>在本教程全文中我们都将使用8000来作为我们发布的web server的端口，就像Django默认做的那样。你当然可以按照自己的意愿进行指定，但是我选这个端口的原因是一般的web server并不会选择8000这个端口，这样可以避免很多冲突。</p>
-
 <h1 id="uwsgi的基本安装与配置">uWSGI的基本安装与配置</h1>
-
 <h2 id="在virtualenv环境中安装uwsgi">在virtualenv环境中安装uWSGI</h2>
-
-<pre><code class="language-bash">pip install uwsgi
-</code></pre>
-
-<p>当然还有其他方式可以安装uWSGI，但是这种方法可以达到最好效果。记住你需要安装必须的Python开发组件。我们使用的环境是Debian，或基于Debian的Ubuntu，那么你需要安装<code>pythonX.Y-dev</code>，这里的X.Y是你所使用的的Python的版本。</p>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">pip install uwsgi
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>当然还有其他方式可以安装uWSGI，但是这种方法可以达到最好效果。记住你需要安装必须的Python开发组件。我们使用的环境是Debian，或基于Debian的Ubuntu，那么你需要安装<code>pythonX.Y-dev</code>，这里的X.Y是你所使用的的Python的版本。</p>
 <h2 id="基础测试">基础测试</h2>
-
 <p>创建一个名为<code>test.py</code>的文件：</p>
-
-<pre><code class="language-python"># test.py
-def application(env, start_response):
-    start_response('200 OK', [('Content-Type', 'text/html')])
-    return [b'Hello World'] # Python3
-    #return ['Hello World'] # Python2
-</code></pre>
-
-<p>需要注意的是Python3需要传入<code>bytes()</code>对象。</p>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="c1"># test.py</span>
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">application</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">start_response</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">start_response</span><span class="p">(</span><span class="s1">&#39;200 OK&#39;</span><span class="p">,</span> <span class="p">[(</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">,</span> <span class="s1">&#39;text/html&#39;</span><span class="p">)])</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="p">[</span><span class="sa">b</span><span class="s1">&#39;Hello World&#39;</span><span class="p">]</span> <span class="c1"># Python3</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">#return [&#39;Hello World&#39;] # Python2</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>需要注意的是Python3需要传入<code>bytes()</code>对象。</p>
 <p>运行uWSGI：</p>
-
-<pre><code class="language-bash">uwsgi --http :8000 --wsgi-file test.py
-</code></pre>
-
-<p>各个选项的含义：
-* <code>http :8000</code>：使用http协议，开放8000端口
-* <code>wsgi-file test.py</code>：加载指定的文件</p>
-
-<p>上面一系列操作后，在浏览器访问8000端口，将得到<code>hello world</code>的回应：</p>
-
-<pre><code class="language-plain">http://example.com:8000
-</code></pre>
-
-<p>这说明如下的连接是联通的：</p>
-
-<pre><code class="language-plain">the web client &lt;-&gt; uWSGI &lt;-&gt; Django
-</code></pre>
-
-<h2 id="测试你的django工程">测试你的Django工程</h2>
-
-<p>现在我们希望使用uWSGI再做一次上面的事情，但这次我们要使用Django站点来替换<code>test.py</code>的角色。</p>
-
-<p>如果你还没有这么做过，那么首先要确保你的<code>mysite</code>工程能够正常工作：</p>
-
-<pre><code class="language-bash">python manage.py runserver 0.0.0.0:8000
-</code></pre>
-
-<p>之后我们通过如下命令运行uWSGI</p>
-
-<pre><code class="language-bash">uwsgi --http :8000 --module mysite.wsgi  # 需要在mysite工程目录下执行该命令
-</code></pre>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">uwsgi --http :8000 --wsgi-file test.py
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>各个选项的含义：</p>
 <ul>
+<li><code>http :8000</code>：使用http协议，开放8000端口</li>
+<li><code>wsgi-file test.py</code>：加载指定的文件</li>
+</ul>
+<p>上面一系列操作后，在浏览器访问8000端口，将得到<code>hello world</code>的回应：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-plain" data-lang="plain"><span class="line"><span class="cl">http://example.com:8000
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这说明如下的连接是联通的：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-plain" data-lang="plain"><span class="line"><span class="cl">the web client &lt;-&gt; uWSGI &lt;-&gt; Django
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="测试你的django工程">测试你的Django工程</h2>
+<p>现在我们希望使用uWSGI再做一次上面的事情，但这次我们要使用Django站点来替换<code>test.py</code>的角色。</p>
+<p>如果你还没有这么做过，那么首先要确保你的<code>mysite</code>工程能够正常工作：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">python manage.py runserver 0.0.0.0:8000
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>之后我们通过如下命令运行uWSGI</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">uwsgi --http :8000 --module mysite.wsgi  <span class="c1"># 需要在mysite工程目录下执行该命令</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
 <li><code>module mysite.wsgi</code>：加载所指定的wsgi模块。</li>
 </ul>
-
 <p>通过浏览器访问服务器，如果站点正常出现，则证明uWSGI与Django合作的设置已经成功了，连接过程如下：</p>
-
-<pre><code class="language-plain">the web client &lt;-&gt; uWSGI &lt;-&gt; Django
-</code></pre>
-
-<p>但正常情况下，我们不会让浏览器直接和uWSGI通信。和浏览器通信这个工作应该由web server来完成，就像中间人一样。</p>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-plain" data-lang="plain"><span class="line"><span class="cl">the web client &lt;-&gt; uWSGI &lt;-&gt; Django
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>但正常情况下，我们不会让浏览器直接和uWSGI通信。和浏览器通信这个工作应该由web server来完成，就像中间人一样。</p>
 <h1 id="nginx基础">nginx基础</h1>
-
 <h2 id="安装nginx">安装nginx</h2>
-
-<pre><code class="language-bash">sudo apt-get install nginx
-sudo /etc/init.d/nginx start
-</code></pre>
-
-<p>现在可以检查nginx是否已经成功在80端口提供了服务。当你看到了从nginx返回的“Welcome to nginx!”之后，则代表配置完成了。</p>
-
-<pre><code class="language-plain">the web client &lt;-&gt; the web server
-</code></pre>
-
-<p>如果80端口已经被其他服务占用，那你就需要重新配置nginx令其使用其他端口了。在本教程中，我们使用8000端口。</p>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo apt-get install nginx
+</span></span><span class="line"><span class="cl">sudo /etc/init.d/nginx start
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>现在可以检查nginx是否已经成功在80端口提供了服务。当你看到了从nginx返回的“Welcome to nginx!”之后，则代表配置完成了。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-plain" data-lang="plain"><span class="line"><span class="cl">the web client &lt;-&gt; the web server
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>如果80端口已经被其他服务占用，那你就需要重新配置nginx令其使用其他端口了。在本教程中，我们使用8000端口。</p>
 <h2 id="为你的站点配置nginx">为你的站点配置nginx</h2>
-
 <p>为了完成配置工作，你需要获取nginx目录下的<code>uwsgi_params</code>文件。你可以在nginx的conf目录中找到它，当然你可以在github上下载该文件：<a href="https://github.com/nginx/nginx/blob/master/conf/uwsgi_params">https://github.com/nginx/nginx/blob/master/conf/uwsgi_params</a></p>
-
 <p>将该文件复制到你的Django工程根目录下，等一会我们会在nginx配置文件中引用它的所在路径。</p>
-
 <p>现在创建一个名为<code>mysite_nginx.conf</code>的文件，内容如下：</p>
-
-<pre><code class="language-plain"># mysite_nginx.conf
-
-# the upstream component nginx needs to connect to
-upstream django {
-    # server unix:///path/to/your/mysite/mysite.sock; # for a file socket
-    server 127.0.0.1:8001; # for a web port socket (we'll use this first)
-}
-
-# configuration of the server
-server {
-    # the port your site will be served on
-    listen      8000;
-    # the domain name it will serve for
-    server_name .example.com; # substitute your machine's IP address or FQDN
-    charset     utf-8;
-
-    # max upload size
-    client_max_body_size 75M;   # adjust to taste
-
-    # Django media
-    location /media  {
-        alias /path/to/your/mysite/media;  # your Django project's media files - amend as required
-    }
-
-    location /static {
-        alias /path/to/your/mysite/static; # your Django project's static files - amend as required
-    }
-
-    # Finally, send all non-media requests to the Django server.
-    location / {
-        uwsgi_pass  django;
-        include     /path/to/your/mysite/uwsgi_params; # the uwsgi_params file you installed
-    }
-}
-</code></pre>
-
-<p>这个配置文件将告知nginx在处理Django有关的请求时，到指定目录中查找media和static文件。对于较大规模的工程，我们建议使用一个单独的server去处理static和media文件，由另一个来处理Django应用，但现在这些都不是问题。</p>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-plain" data-lang="plain"><span class="line"><span class="cl"># mysite_nginx.conf
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># the upstream component nginx needs to connect to
+</span></span><span class="line"><span class="cl">upstream django {
+</span></span><span class="line"><span class="cl">    # server unix:///path/to/your/mysite/mysite.sock; # for a file socket
+</span></span><span class="line"><span class="cl">    server 127.0.0.1:8001; # for a web port socket (we&#39;ll use this first)
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># configuration of the server
+</span></span><span class="line"><span class="cl">server {
+</span></span><span class="line"><span class="cl">    # the port your site will be served on
+</span></span><span class="line"><span class="cl">    listen      8000;
+</span></span><span class="line"><span class="cl">    # the domain name it will serve for
+</span></span><span class="line"><span class="cl">    server_name .example.com; # substitute your machine&#39;s IP address or FQDN
+</span></span><span class="line"><span class="cl">    charset     utf-8;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    # max upload size
+</span></span><span class="line"><span class="cl">    client_max_body_size 75M;   # adjust to taste
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    # Django media
+</span></span><span class="line"><span class="cl">    location /media  {
+</span></span><span class="line"><span class="cl">        alias /path/to/your/mysite/media;  # your Django project&#39;s media files - amend as required
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    location /static {
+</span></span><span class="line"><span class="cl">        alias /path/to/your/mysite/static; # your Django project&#39;s static files - amend as required
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    # Finally, send all non-media requests to the Django server.
+</span></span><span class="line"><span class="cl">    location / {
+</span></span><span class="line"><span class="cl">        uwsgi_pass  django;
+</span></span><span class="line"><span class="cl">        include     /path/to/your/mysite/uwsgi_params; # the uwsgi_params file you installed
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这个配置文件将告知nginx在处理Django有关的请求时，到指定目录中查找media和static文件。对于较大规模的工程，我们建议使用一个单独的server去处理static和media文件，由另一个来处理Django应用，但现在这些都不是问题。</p>
 <p>在/etc/nginx/sites-enabled中创建软链接。</p>
-
-<pre><code class="language-bash">sudo ln -s ~/path/to/your/mysite/mysite_nginx.conf /etc/nginx/sites-enabled/
-</code></pre>
-
-<h2 id="部署static文件">部署static文件</h2>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo ln -s ~/path/to/your/mysite/mysite_nginx.conf /etc/nginx/sites-enabled/
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="部署static文件">部署static文件</h2>
 <p>在运行nginx之前，你必须将Django的static文件都收集到static文件夹中。首先编辑<code>mysite/settings.py</code>，添加内容：</p>
-
-<pre><code class="language-python">STATIC_ROOT = os.path.join(BASE_DIR, &quot;static/&quot;)
-</code></pre>
-
-<p>然后运行</p>
-
-<pre><code class="language-bash">python manage.py collectstatic
-</code></pre>
-
-<h2 id="nginx基础测试">nginx基础测试</h2>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">STATIC_ROOT</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">BASE_DIR</span><span class="p">,</span> <span class="s2">&#34;static/&#34;</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>然后运行</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">python manage.py collectstatic
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="nginx基础测试">nginx基础测试</h2>
 <p>重启nginx</p>
-
-<pre><code class="language-bash">sudo /etc/init.d/nginx restart
-</code></pre>
-
-<p>现在验证服务器是否正常工作，并且在<code>/path/to/your/project/project/media directory</code>目录下添加一个文件<code>media.png</code>，然后通过<code>http://example.com:8000/media/media.png</code>查看是否能正常访问该文件。</p>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo /etc/init.d/nginx restart
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>现在验证服务器是否正常工作，并且在<code>/path/to/your/project/project/media directory</code>目录下添加一个文件<code>media.png</code>，然后通过<code>http://example.com:8000/media/media.png</code>查看是否能正常访问该文件。</p>
 <p>如果不是直接重启nginx，而是先停止然后重新启动nginx的话，你可能会在发生错误时得到提示。</p>
-
-<h1 id="nginx-uwsgi和test-py">nginx、uWSGI和test.py</h1>
-
+<h1 id="nginxuwsgi和testpy">nginx、uWSGI和test.py</h1>
 <p>我们让nginx和返回“Hello World”的test.py程序联动起来。</p>
-
-<pre><code class="language-bash">uwsgi --socket :8001 --wsgi-file test.py
-</code></pre>
-
-<p>这和之前的命令相同，只是这次我们换了一个新的端口。</p>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">uwsgi --socket :8001 --wsgi-file test.py
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这和之前的命令相同，只是这次我们换了一个新的端口。</p>
 <p>nginx刚才已经通过配置使其通过8001端口来和uWSGI通信了，并且向外部开放8000端口以提供服务。此时可以访问<a href="http://example.com:8000">http://example.com:8000</a>。
 工作流程如下：</p>
-
-<pre><code class="language-plain">the web client &lt;-&gt; the web server &lt;-&gt; the socket &lt;-&gt; uwsgi &lt;-&gt; Python
-</code></pre>
-
-<p>此外，你还可以通过<a href="http://example.com:8001">http://example.com:8001</a>来访问uwsgi提供的服务，但此时你并不会得到所期望的内容，因为浏览器以http协议通信，而不是WSGI，但是你可以在运行uWSGI的终端看到部分输出。</p>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-plain" data-lang="plain"><span class="line"><span class="cl">the web client &lt;-&gt; the web server &lt;-&gt; the socket &lt;-&gt; uwsgi &lt;-&gt; Python
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>此外，你还可以通过<a href="http://example.com:8001">http://example.com:8001</a>来访问uwsgi提供的服务，但此时你并不会得到所期望的内容，因为浏览器以http协议通信，而不是WSGI，但是你可以在运行uWSGI的终端看到部分输出。</p>
 <h1 id="使用unix-sockets代替端口">使用Unix sockets代替端口</h1>
-
 <p>目前为止，我们一直使用TCP socket，因为它非常简单，但事实上使用Unix sockets是个更好的选择，因为它的额外开销更小。</p>
-
 <p>编辑<code>mysite_nginx.conf</code>，按照如下内容进行修改：</p>
-
-<pre><code class="language-plain">server unix:///path/to/your/mysite/mysite.sock;
-# server 127.0.0.1:8001;
-</code></pre>
-
-<p>重启nginx，并重新运行uWSGI：</p>
-
-<pre><code class="language-bash">uwsgi --socket mysite.sock --wsgi-file test.py
-</code></pre>
-
-<p>这一次socket选项说明了uWSGI通过哪个文件来使用Unix sockets。现在请再次访问<a href="http://example.com:8000">http://example.com:8000</a>以查看结果。</p>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-plain" data-lang="plain"><span class="line"><span class="cl">server unix:///path/to/your/mysite/mysite.sock;
+</span></span><span class="line"><span class="cl"># server 127.0.0.1:8001;
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>重启nginx，并重新运行uWSGI：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">uwsgi --socket mysite.sock --wsgi-file test.py
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这一次socket选项说明了uWSGI通过哪个文件来使用Unix sockets。现在请再次访问<a href="http://example.com:8000">http://example.com:8000</a>以查看结果。</p>
 <h1 id="如果出现了问题">如果出现了问题</h1>
-
 <p>检查nginx的错误日志<code>/var/log/nginx/error.log</code>。如果你看到了如下内容：</p>
-
-<pre><code class="language-plain">connect() to unix:///path/to/your/mysite/mysite.sock failed (13: Permission denied)
-</code></pre>
-
-<p>那就意味着你需要在使用uWSGI时指定权限以便nginx能够访问.sock文件。</p>
-
-<pre><code class="language-bash">uwsgi --socket mysite.sock --wsgi-file test.py --chmod-sock=666 # (very permission)
-# uwsgi --socket mysite.sock --wsgi-file test.py --chmod-sock=664 # (more sensible)
-</code></pre>
-
-<p>你也可以将你的用户加入到nginx的用户组中（可能时www-data），或者vice-versa，以使nginx能够访问你创建的.sock文件。</p>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-plain" data-lang="plain"><span class="line"><span class="cl">connect() to unix:///path/to/your/mysite/mysite.sock failed (13: Permission denied)
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>那就意味着你需要在使用uWSGI时指定权限以便nginx能够访问.sock文件。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">uwsgi --socket mysite.sock --wsgi-file test.py --chmod-sock<span class="o">=</span><span class="m">666</span> <span class="c1"># (very permission)</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># uwsgi --socket mysite.sock --wsgi-file test.py --chmod-sock=664 # (more sensible)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>你也可以将你的用户加入到nginx的用户组中（可能时www-data），或者vice-versa，以使nginx能够访问你创建的.sock文件。</p>
 <p>让nginx在运行的终端持续输出日志是一个比较好的选择，因为这样你可以在出错时很快速的定位到问题所在。</p>
-
 <h1 id="在uwsgi和nginx的协助下运行django应用">在uwsgi和nginx的协助下运行Django应用</h1>
-
 <p>让我们通过下面的命令运行Django应用。</p>
-
-<pre><code class="language-bash">uwsgi --socket mysite.sock --module mysite.wsgi --chmod-socket=664
-</code></pre>
-
-<p>现在uWSGI和nginx应该已经可以提供Django应用的内容了。</p>
-
-<h1 id="在-ini文件中配置uwsgi">在.ini文件中配置uWSGI</h1>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">uwsgi --socket mysite.sock --module mysite.wsgi --chmod-socket<span class="o">=</span><span class="m">664</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>现在uWSGI和nginx应该已经可以提供Django应用的内容了。</p>
+<h1 id="在ini文件中配置uwsgi">在.ini文件中配置uWSGI</h1>
 <p>我们可以把uWSGI所使用的参数放到一个配置文件中，然后在uWSGI启动时指定该文件，这样可以简化很多操作。</p>
-
 <p>创建名为<code>mysite_uwsgi.ini</code>的文件：</p>
-
-<pre><code class="language-ini"># mysite_uwsgi.ini file
-[uwsgi]
-
-# Django-related settings
-# the base directory (full path)
-chdir           = /path/to/your/project
-# Django's wsgi file
-module          = project.wsgi
-# the virtualenv (full path)
-home            = /path/to/virtualenv
-
-# process-related settings
-# master
-master          = true
-# maximum number of worker processes
-processes       = 10
-# the socket (use the full path to be safe
-socket          = /path/to/your/project/mysite.sock
-# ... with appropriate permissions - may be needed
-# chmod-socket    = 664
-# clear environment on exit
-vacuum          = true
-</code></pre>
-
-<p>然后如下运行uwsgi</p>
-
-<pre><code class="language-bash">uwsgi --ini mysite_uwsgi.ini
-</code></pre>
-
-<p>我们Django站点又一次如期望的那样运行了。</p>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-ini" data-lang="ini"><span class="line"><span class="cl"><span class="c1"># mysite_uwsgi.ini file</span>
+</span></span><span class="line"><span class="cl"><span class="k">[uwsgi]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Django-related settings</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># the base directory (full path)</span>
+</span></span><span class="line"><span class="cl"><span class="na">chdir</span>           <span class="o">=</span> <span class="s">/path/to/your/project</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Django&#39;s wsgi file</span>
+</span></span><span class="line"><span class="cl"><span class="na">module</span>          <span class="o">=</span> <span class="s">project.wsgi</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># the virtualenv (full path)</span>
+</span></span><span class="line"><span class="cl"><span class="na">home</span>            <span class="o">=</span> <span class="s">/path/to/virtualenv</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># process-related settings</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># master</span>
+</span></span><span class="line"><span class="cl"><span class="na">master</span>          <span class="o">=</span> <span class="s">true</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># maximum number of worker processes</span>
+</span></span><span class="line"><span class="cl"><span class="na">processes</span>       <span class="o">=</span> <span class="s">10</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># the socket (use the full path to be safe</span>
+</span></span><span class="line"><span class="cl"><span class="na">socket</span>          <span class="o">=</span> <span class="s">/path/to/your/project/mysite.sock</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># ... with appropriate permissions - may be needed</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># chmod-socket    = 664</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># clear environment on exit</span>
+</span></span><span class="line"><span class="cl"><span class="na">vacuum</span>          <span class="o">=</span> <span class="s">true</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>然后如下运行uwsgi</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">uwsgi --ini mysite_uwsgi.ini
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>我们Django站点又一次如期望的那样运行了。</p>
 <h1 id="在系统环境中安装uwsgi">在系统环境中安装uWSGI</h1>
-
 <p>目前为止，我们的uWSGI只安装在了virtualenv环境中，我们需要在系统环境中安装uWSGI来达到实际部署的目的。</p>
-
 <p>退出你的virtualenv环境：</p>
-
-<pre><code class="language-bash">deactivate
-</code></pre>
-
-<p>然后在系统环境中安装uWSGI</p>
-
-<pre><code class="language-bash">sudo pip install uwsgi
-# pip install http:ss/projects.unbit.it/downloads/uwsgi-lts.tar.gz  # 安装长期支持的版本
-</code></pre>
-
-<p>uWSGI wiki站点描述了多种安装步骤。在安装前请选择好版本，并以对应的方式进行安装。</p>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">deactivate
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>然后在系统环境中安装uWSGI</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo pip install uwsgi
+</span></span><span class="line"><span class="cl"><span class="c1"># pip install http:ss/projects.unbit.it/downloads/uwsgi-lts.tar.gz  # 安装长期支持的版本</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>uWSGI wiki站点描述了多种安装步骤。在安装前请选择好版本，并以对应的方式进行安装。</p>
 <p>检查你的uWSGI是否能正常工作：</p>
-
-<pre><code class="language-bash">uwsgi --ini mysite_uwsgi.ini
-</code></pre>
-
-<h1 id="emperor模式">Emperor模式</h1>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">uwsgi --ini mysite_uwsgi.ini
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="emperor模式">Emperor模式</h1>
 <p>uWSGI可以运行在Emperor Mode中，在这种模式下，它将见识uWSGI配置文件所在目录，然后为每个以发现的配置文件生成一个实例（vassals/奴隶）。</p>
-
 <p>无论何时修改配置文件，emperor都会自动的重新启动vassal。</p>
-
-<pre><code class="language-bash">sudo mkdir /etc/uwsgi
-sudo mkdir /etc/uwsgi/vassals  # 创建vassal目录
-sudo ln -s /path/to/your/mysite/mysite_uwsgi.ini /etc/uwsgi/vassals/
-uwsgi --emperor /etc/uwsgi/vassals --uid www-data --gid www-data
-</code></pre>
-
-<p>你可能会需要以root权限运行uWSGI，各个选项含义：
-* <code>emperor</code>：查找配置文件的目录
-* <code>uid</code>：当进程被启动时他的用户权限
-* <code>gid</code>：当进程被启动时它的用户组权限</p>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo mkdir /etc/uwsgi
+</span></span><span class="line"><span class="cl">sudo mkdir /etc/uwsgi/vassals  <span class="c1"># 创建vassal目录</span>
+</span></span><span class="line"><span class="cl">sudo ln -s /path/to/your/mysite/mysite_uwsgi.ini /etc/uwsgi/vassals/
+</span></span><span class="line"><span class="cl">uwsgi --emperor /etc/uwsgi/vassals --uid www-data --gid www-data
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>你可能会需要以root权限运行uWSGI，各个选项含义：</p>
+<ul>
+<li><code>emperor</code>：查找配置文件的目录</li>
+<li><code>uid</code>：当进程被启动时他的用户权限</li>
+<li><code>gid</code>：当进程被启动时它的用户组权限</li>
+</ul>
 <p>检查站点是否仍然正常运行。</p>
-
 <h1 id="设置uwsgi开机启动">设置uWSGI开机启动</h1>
-
 <p>最后一步，我们要让uWSGI开机时自启动。</p>
-
 <p>对于很多系统，最简单的设置方式是使用<code>rc.local</code>。</p>
-
 <p>编辑<code>rc.local</code>并在<code>exit 0</code>之前添加如下内容：</p>
-
-<pre><code class="language-bash">/usr/local/bin/uwsgi --emperor /etc/uwsgi/vassals --uid www-data --gid www-data --daemonize /var/log/uwsgi-emperor.log
-</code></pre>
-
-<h1 id="更多设置">更多设置</h1>
-
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">/usr/local/bin/uwsgi --emperor /etc/uwsgi/vassals --uid www-data --gid www-data --daemonize /var/log/uwsgi-emperor.log
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="更多设置">更多设置</h1>
 <p>一定要记得，这只是一篇让你入门的教程。如果想在生产环境中使用nginx和uWSGI，你需要阅读相关的详细文档。</p>
-
 <p>nginx和uWSGI都有很有爱的社区，你可以在这些社区中找到关于配置和使用的建议。</p>
-
 <h2 id="nginx">nginx</h2>
-
 <p>如果你希望是nginx在生产环境中使用80端口，而不是8000端口，那么你在这篇教程中将不会找到答案。</p>
-
 <p>你应该同时配置为非Django文件配置单独的服务。例如通过uWSGI访问static文件是件效率很低的事情。相反，你应该让nginx绕过uWSGI直接访问它们。</p>
-
 <h2 id="uwsgi">uWSGI</h2>
-
 <p>uWSGI支持多种配置的方式。具体可以查看<a href="https://uwsgi-docs.readthedocs.io/">uWSGI’s documentation </a>和<a href="https://projects.unbit.it/uwsgi/wiki/Example"> examples</a>。</p>
-
 <p>这篇教程中只提到了一部分uWSGI的选项，其他你应该了解的在生产环境中部署Django的参数如下：</p>
-
-<pre><code class="language-plain">env = DJANGO_SETTINGS_MODULE=mysite.settings # set an environment variable
-safe-pidfile = /tmp/project-master.pid # create a pidfile
-harakiri = 20 # respawn processes taking more than 20 seconds
-limit-as = 128 # limit the project to 128 MB
-max-requests = 5000 # respawn processes after serving 5000 requests
-daemonize = /var/log/uwsgi/yourproject.log # background the process &amp; log
-</code></pre>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-plain" data-lang="plain"><span class="line"><span class="cl">env = DJANGO_SETTINGS_MODULE=mysite.settings # set an environment variable
+</span></span><span class="line"><span class="cl">safe-pidfile = /tmp/project-master.pid # create a pidfile
+</span></span><span class="line"><span class="cl">harakiri = 20 # respawn processes taking more than 20 seconds
+</span></span><span class="line"><span class="cl">limit-as = 128 # limit the project to 128 MB
+</span></span><span class="line"><span class="cl">max-requests = 5000 # respawn processes after serving 5000 requests
+</span></span><span class="line"><span class="cl">daemonize = /var/log/uwsgi/yourproject.log # background the process &amp; log
+</span></span></code></pre></td></tr></table>
+</div>
+</div>
     </article>
-    <section class="license">
-        <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>
-        <br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.
-    </section>
+
+    
+
 
     <ul class="pager article-pager">
       <li class="pager-newer">
@@ -475,24 +654,17 @@ daemonize = /var/log/uwsgi/yourproject.log # background the process &amp; log
       </li>
       <li class="pager-older pager-noitem">Older &gt;</li>
     </ul>
+  </div>
 
 
 <div class="site-footer">
-  <div class="copyright">&copy; Copyright 2018 Sarshes</div>
+  <div class="copyright">&copy; Copyright 2018-2023 Jnchk</div>
   <ul class="site-footer-items">
   </ul>
   <div class="powerdby">
     Powered by <a href="https://gohugo.io/">Hugo</a> and <a href="https://github.com/taikii/whiteplain">Whiteplain</a>
   </div>
 </div>
-<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
-
-<script src="/js/fontawesome.js"></script>
-<script src="/js/script.js"></script>
-<script src="/js/prism.js"></script>
-<script src="/js/custom.js"></script>
 
 
 </body>
