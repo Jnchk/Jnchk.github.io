@@ -2,11 +2,11 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>KillMeBaby</title>
-    <link>https://killmebaby.cc/about/</link>
+    <link>https://blog.killmebaby.cc/about/</link>
     <description>Recent content on KillMeBaby</description>
-    <generator>Hugo -- gohugo.io</generator>
+    <generator>Hugo</generator>
     <language>zh-CN</language>
     <copyright>&amp;copy; Copyright 2018-2023 Jnchk. Protected by &lt;a href=https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.en&gt;CC BY-NC-SA 4.0&lt;/a&gt;.</copyright>
-    <atom:link href="https://killmebaby.cc/about/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://blog.killmebaby.cc/about/index.xml" rel="self" type="application/rss+xml" />
   </channel>
 </rss>

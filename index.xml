@@ -2,67 +2,67 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>KillMeBaby</title>
-    <link>https://killmebaby.cc/</link>
+    <link>https://blog.killmebaby.cc/</link>
     <description>Recent content on KillMeBaby</description>
-    <generator>Hugo -- gohugo.io</generator>
+    <generator>Hugo</generator>
     <language>zh-CN</language>
     <copyright>&amp;copy; Copyright 2018-2023 Jnchk. Protected by &lt;a href=https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.en&gt;CC BY-NC-SA 4.0&lt;/a&gt;.</copyright>
     <lastBuildDate>Wed, 05 Dec 2018 10:39:28 +0800</lastBuildDate>
-    <atom:link href="https://killmebaby.cc/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://blog.killmebaby.cc/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Flask Simple Manual</title>
-      <link>https://killmebaby.cc/posts/2018-12-5-flask-manual/</link>
+      <link>https://blog.killmebaby.cc/posts/2018-12-5-flask-manual/</link>
       <pubDate>Wed, 05 Dec 2018 10:39:28 +0800</pubDate>
-      <guid>https://killmebaby.cc/posts/2018-12-5-flask-manual/</guid>
+      <guid>https://blog.killmebaby.cc/posts/2018-12-5-flask-manual/</guid>
       <description>&lt;p&gt;&lt;code&gt;Flask&lt;/code&gt; is a microframework for Python based on Werkzeug, Jinja 2 and good intentions.&lt;/p&gt;</description>
     </item>
     <item>
       <title>How to Deploy Local Docker Registry</title>
-      <link>https://killmebaby.cc/posts/2018-10-27-how-to-deploy-local-docker-registry/</link>
+      <link>https://blog.killmebaby.cc/posts/2018-10-27-how-to-deploy-local-docker-registry/</link>
       <pubDate>Sat, 27 Oct 2018 21:06:59 +0800</pubDate>
-      <guid>https://killmebaby.cc/posts/2018-10-27-how-to-deploy-local-docker-registry/</guid>
+      <guid>https://blog.killmebaby.cc/posts/2018-10-27-how-to-deploy-local-docker-registry/</guid>
       <description>&lt;p&gt;搭建私有容器云平台离不开镜像仓库，本文介绍如何通过Harbor搭建私有镜像仓库。&lt;/p&gt;</description>
     </item>
     <item>
       <title>Golang不可重入函数</title>
-      <link>https://killmebaby.cc/posts/2018-10-11-golang-nonreetrant-function/</link>
+      <link>https://blog.killmebaby.cc/posts/2018-10-11-golang-nonreetrant-function/</link>
       <pubDate>Thu, 11 Oct 2018 10:28:02 +0800</pubDate>
-      <guid>https://killmebaby.cc/posts/2018-10-11-golang-nonreetrant-function/</guid>
+      <guid>https://blog.killmebaby.cc/posts/2018-10-11-golang-nonreetrant-function/</guid>
       <description>&lt;p&gt;在同一时间点只会被运行一次的函数，我们称其为不可重入函数。本文介绍Go语言不可重入函数的实现方式。&lt;/p&gt;</description>
     </item>
     <item>
       <title>SS&#43;privoxy实现pac代理</title>
-      <link>https://killmebaby.cc/posts/2018-09-03-ss&#43;privoxy%E5%AE%9E%E7%8E%B0pac%E4%BB%A3%E7%90%86/</link>
+      <link>https://blog.killmebaby.cc/posts/2018-09-03-ss&#43;privoxy%E5%AE%9E%E7%8E%B0pac%E4%BB%A3%E7%90%86/</link>
       <pubDate>Mon, 03 Sep 2018 01:21:46 +0800</pubDate>
-      <guid>https://killmebaby.cc/posts/2018-09-03-ss&#43;privoxy%E5%AE%9E%E7%8E%B0pac%E4%BB%A3%E7%90%86/</guid>
+      <guid>https://blog.killmebaby.cc/posts/2018-09-03-ss&#43;privoxy%E5%AE%9E%E7%8E%B0pac%E4%BB%A3%E7%90%86/</guid>
       <description>&lt;p&gt;本文介绍如何通过&lt;code&gt;ss&lt;/code&gt;与&lt;code&gt;privoxy&lt;/code&gt;在&lt;code&gt;Linux&lt;/code&gt;客户机上实现带有pac功能的代理。&lt;/p&gt;</description>
     </item>
     <item>
       <title>How to deploy Kubernetes with Kubespray</title>
-      <link>https://killmebaby.cc/posts/2018-08-05-kubernetes-deployment-with-kubespray/</link>
+      <link>https://blog.killmebaby.cc/posts/2018-08-05-kubernetes-deployment-with-kubespray/</link>
       <pubDate>Sun, 05 Aug 2018 09:58:09 +0800</pubDate>
-      <guid>https://killmebaby.cc/posts/2018-08-05-kubernetes-deployment-with-kubespray/</guid>
+      <guid>https://blog.killmebaby.cc/posts/2018-08-05-kubernetes-deployment-with-kubespray/</guid>
       <description>&lt;p&gt;本文介绍如何通过kuberpray部署kubernetes集群。&lt;/p&gt;</description>
     </item>
     <item>
       <title>How to deploy ceph with ceph-deploy</title>
-      <link>https://killmebaby.cc/posts/2018-02-24-ceph-deployment/</link>
+      <link>https://blog.killmebaby.cc/posts/2018-02-24-ceph-deployment/</link>
       <pubDate>Sat, 24 Feb 2018 11:18:00 +0000</pubDate>
-      <guid>https://killmebaby.cc/posts/2018-02-24-ceph-deployment/</guid>
+      <guid>https://blog.killmebaby.cc/posts/2018-02-24-ceph-deployment/</guid>
       <description>&lt;p&gt;本文介绍如何通过ceph-deploy部署ceph集群。&lt;/p&gt;</description>
     </item>
     <item>
       <title>How to deploy redis cluster</title>
-      <link>https://killmebaby.cc/posts/2018-02-06-redis-cluster-deployment/</link>
+      <link>https://blog.killmebaby.cc/posts/2018-02-06-redis-cluster-deployment/</link>
       <pubDate>Tue, 06 Feb 2018 22:45:59 +0000</pubDate>
-      <guid>https://killmebaby.cc/posts/2018-02-06-redis-cluster-deployment/</guid>
+      <guid>https://blog.killmebaby.cc/posts/2018-02-06-redis-cluster-deployment/</guid>
       <description>&lt;p&gt;本文介绍如何通过源码部署redis cluster。&lt;/p&gt;</description>
     </item>
     <item>
       <title>How to deploy django with wsgi</title>
-      <link>https://killmebaby.cc/posts/2017-09-17-nginx-uwsgi-django-deployment/</link>
+      <link>https://blog.killmebaby.cc/posts/2017-09-17-nginx-uwsgi-django-deployment/</link>
       <pubDate>Sun, 17 Sep 2017 22:37:59 +0000</pubDate>
-      <guid>https://killmebaby.cc/posts/2017-09-17-nginx-uwsgi-django-deployment/</guid>
+      <guid>https://blog.killmebaby.cc/posts/2017-09-17-nginx-uwsgi-django-deployment/</guid>
       <description>&lt;p&gt;本文介绍如何部署nginx+uWSGI+Django的生产环境。&lt;/p&gt;</description>
     </item>
   </channel>
